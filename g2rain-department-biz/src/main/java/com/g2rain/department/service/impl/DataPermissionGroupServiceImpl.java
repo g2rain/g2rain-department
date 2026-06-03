@@ -12,6 +12,7 @@ import com.g2rain.department.dao.po.DataPermissionGroupPo;
 import com.g2rain.department.dto.DataPermissionGroupDto;
 import com.g2rain.department.dto.DataPermissionGroupSelectDto;
 import com.g2rain.department.dto.UpdateStatusDto;
+import com.g2rain.department.enums.CommonStatus;
 import com.g2rain.department.service.DataPermissionGroupService;
 import com.g2rain.department.service.support.CommonStatusUpdater;
 import com.g2rain.department.vo.DataPermissionGroupVo;
@@ -79,6 +80,7 @@ public class DataPermissionGroupServiceImpl implements DataPermissionGroupServic
             LocalDateTime now = Moments.now();
             entity.setUpdateTime(now);
             entity.setCreateTime(now);
+            entity.setStatus(CommonStatus.ACTIVE.name());
             int success = dataPermissionGroupDao.insert(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.CREATE_DATA_ERROR);
         } else {
