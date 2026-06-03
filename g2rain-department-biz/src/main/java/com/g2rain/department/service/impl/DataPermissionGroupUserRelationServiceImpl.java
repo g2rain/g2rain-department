@@ -90,6 +90,7 @@ public class DataPermissionGroupUserRelationServiceImpl implements DataPermissio
             LocalDateTime now = Moments.now();
             entity.setUpdateTime(now);
             entity.setCreateTime(now);
+            entity.setStatus(CommonStatus.ACTIVE.name());
             int success = dataPermissionGroupUserRelationDao.insert(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.CREATE_DATA_ERROR);
         } else {
