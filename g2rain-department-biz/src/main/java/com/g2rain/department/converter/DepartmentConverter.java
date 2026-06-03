@@ -41,6 +41,8 @@ public interface DepartmentConverter {
      */
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "deleteFlag", ignore = true)
+    @Mapping(target = "deptPath", ignore = true)
+    @Mapping(target = "status", ignore = true)
     @Mapping(target = "createTime", source = "createTime", qualifiedByName = "stringToLocalDateTime")
     @Mapping(target = "updateTime", source = "updateTime", qualifiedByName = "stringToLocalDateTime")
     DepartmentPo dto2po(DepartmentDto dto);

@@ -29,6 +29,12 @@ public class DataPermissionMetaSelectDto extends BaseSelectListDto {
     private Long organId;
 
     /**
+     * 权限策略名称
+     */
+    @Schema(description = "权限策略名称")
+    private String metaName;
+
+    /**
      * 权限模型标识
      */
     @Schema(description = "权限模型标识")

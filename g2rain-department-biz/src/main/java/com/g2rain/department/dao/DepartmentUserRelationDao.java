@@ -1,8 +1,11 @@
 package com.g2rain.department.dao;
 
+import com.g2rain.data.isolation.annotations.DataIsolation;
+import com.g2rain.data.isolation.annotations.IgnoreIsolation;
 import com.g2rain.department.dao.po.DepartmentUserRelationPo;
 import com.g2rain.department.dto.DepartmentUserRelationSelectDto;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -13,6 +16,7 @@ import java.util.List;
  * @author G2rain Generator
  */
 @Mapper
+@DataIsolation(organIdPropertyName = "organId", organIdColumnName = "organ_id")
 public interface DepartmentUserRelationDao {
 
     /**
@@ -70,4 +74,14 @@ public interface DepartmentUserRelationDao {
      * @return 实体对象列表
      */
     List<DepartmentUserRelationPo> selectList(DepartmentUserRelationSelectDto selectDto);
+
+    /**
+     * 根据机构和用户查询关联部门路径。
+     *
+     * @param organId 机构标识
+     * @param userId  用户标识
+     * @return 部门路径列表
+     */
+    @IgnoreIsolation
+    List<String> selectDeptPaths(@Param("organId") Long organId, @Param("userId") Long userId);
 }

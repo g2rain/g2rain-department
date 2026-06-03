@@ -26,6 +26,11 @@ public class DataPermissionMetaPo extends BasePo {
     private Long organId;
 
     /**
+     * 权限策略名称
+     */
+    private String metaName;
+
+    /**
      * 权限模型标识
      */
     private Long modelId;

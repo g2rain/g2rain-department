@@ -31,11 +31,6 @@ public class DepartmentPo extends BasePo {
     private Long organId;
 
     /**
-     * 当前层级编码（固定4位步长）
-     */
-    private String deptCode;
-
-    /**
      * 全路径编码，如 00010001
      */
     private String deptPath;

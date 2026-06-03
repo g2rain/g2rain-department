@@ -1,5 +1,6 @@
 package com.g2rain.department.service.impl;
 
+import com.g2rain.common.exception.BusinessException;
 import com.g2rain.common.exception.SystemErrorCode;
 import com.g2rain.common.id.IdGenerator;
 import com.g2rain.common.model.PageData;
@@ -8,7 +9,9 @@ import com.g2rain.common.utils.Asserts;
 import com.g2rain.common.utils.Moments;
 import com.g2rain.department.converter.DataPermissionFieldConverter;
 import com.g2rain.department.dao.DataPermissionFieldDao;
+import com.g2rain.department.dao.DataPermissionModelDao;
 import com.g2rain.department.dao.po.DataPermissionFieldPo;
+import com.g2rain.department.dao.po.DataPermissionModelPo;
 import com.g2rain.department.dto.DataPermissionFieldDto;
 import com.g2rain.department.dto.DataPermissionFieldSelectDto;
 import com.g2rain.department.service.DataPermissionFieldService;
@@ -33,6 +36,9 @@ import java.util.Objects;
 @Service(value = "dataPermissionFieldServiceImpl")
 public class DataPermissionFieldServiceImpl implements DataPermissionFieldService {
 
+    @Resource(name = "dataPermissionModelDao")
+    private DataPermissionModelDao dataPermissionModelDao;
+
     @Resource(name = "dataPermissionFieldDao")
     private DataPermissionFieldDao dataPermissionFieldDao;
 
@@ -47,9 +53,9 @@ public class DataPermissionFieldServiceImpl implements DataPermissionFieldServic
     @Override
     public List<DataPermissionFieldVo> selectList(DataPermissionFieldSelectDto selectDto) {
         return dataPermissionFieldDao.selectList(selectDto)
-                .stream()
-                .map(DataPermissionFieldConverter.INSTANCE::po2vo)
-                .toList();
+            .stream()
+            .map(DataPermissionFieldConverter.INSTANCE::po2vo)
+            .toList();
     }
 
     @Override
@@ -58,19 +64,34 @@ public class DataPermissionFieldServiceImpl implements DataPermissionFieldServic
             dataPermissionFieldDao.selectList(selectDto.getQuery());
         });
         List<DataPermissionFieldVo> result = page.getResult()
-                .stream()
-                .map(DataPermissionFieldConverter.INSTANCE::po2vo)
-                .toList();
+            .stream()
+            .map(DataPermissionFieldConverter.INSTANCE::po2vo)
+            .toList();
         return PageData.of(page.getPageNum(), page.getPageSize(), page.getTotal(), result);
     }
 
     @Override
     public Long save(DataPermissionFieldDto dto) {
+        DataPermissionModelPo dataPermissionModel = dataPermissionModelDao.selectById(dto.getModelId());
+        Asserts.isTrue(Objects.nonNull(dataPermissionModel), SystemErrorCode.PARAM_VAL_INVALID,
+            dto.getModelId()
+        );
+
+        // 判断是新增还是更新
+        Long id = dto.getId();
+
+        // 校验同一个模块编码和业务表名唯一性
+        DataPermissionFieldSelectDto selectDto = new DataPermissionFieldSelectDto();
+        selectDto.setModelId(dto.getModelId());
+        selectDto.setFieldName(dto.getFieldName());
+        List<DataPermissionFieldPo> units = dataPermissionFieldDao.selectList(selectDto);
+        if (units.stream().anyMatch(o -> !o.getId().equals(id))) {
+            throw new BusinessException(SystemErrorCode.DATA_EXISTS);
+        }
+
         // 转换 DTO 为 PO
         DataPermissionFieldPo entity = DataPermissionFieldConverter.INSTANCE.dto2po(dto);
 
-        // 判断是新增还是更新
-        Long id = entity.getId();
         if (Objects.isNull(id) || id == 0) {
             // 新增：使用IdGenerator生成主键
             entity.setId(idGenerator.generateId());

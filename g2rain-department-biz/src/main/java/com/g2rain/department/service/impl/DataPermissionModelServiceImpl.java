@@ -1,5 +1,6 @@
 package com.g2rain.department.service.impl;
 
+import com.g2rain.common.exception.BusinessException;
 import com.g2rain.common.exception.SystemErrorCode;
 import com.g2rain.common.id.IdGenerator;
 import com.g2rain.common.model.PageData;
@@ -47,9 +48,9 @@ public class DataPermissionModelServiceImpl implements DataPermissionModelServic
     @Override
     public List<DataPermissionModelVo> selectList(DataPermissionModelSelectDto selectDto) {
         return dataPermissionModelDao.selectList(selectDto)
-                .stream()
-                .map(DataPermissionModelConverter.INSTANCE::po2vo)
-                .toList();
+            .stream()
+            .map(DataPermissionModelConverter.INSTANCE::po2vo)
+            .toList();
     }
 
     @Override
@@ -58,19 +59,29 @@ public class DataPermissionModelServiceImpl implements DataPermissionModelServic
             dataPermissionModelDao.selectList(selectDto.getQuery());
         });
         List<DataPermissionModelVo> result = page.getResult()
-                .stream()
-                .map(DataPermissionModelConverter.INSTANCE::po2vo)
-                .toList();
+            .stream()
+            .map(DataPermissionModelConverter.INSTANCE::po2vo)
+            .toList();
         return PageData.of(page.getPageNum(), page.getPageSize(), page.getTotal(), result);
     }
 
     @Override
     public Long save(DataPermissionModelDto dto) {
+        // 判断是新增还是更新
+        Long id = dto.getId();
+
+        // 校验同一个模块编码和业务表名唯一性
+        DataPermissionModelSelectDto selectDto = new DataPermissionModelSelectDto();
+        selectDto.setModuleCode(dto.getModuleCode());
+        selectDto.setTableName(dto.getTableName());
+        List<DataPermissionModelPo> units = dataPermissionModelDao.selectList(selectDto);
+        if (units.stream().anyMatch(o -> !o.getId().equals(id))) {
+            throw new BusinessException(SystemErrorCode.DATA_EXISTS);
+        }
+
         // 转换 DTO 为 PO
         DataPermissionModelPo entity = DataPermissionModelConverter.INSTANCE.dto2po(dto);
 
-        // 判断是新增还是更新
-        Long id = entity.getId();
         if (Objects.isNull(id) || id == 0) {
             // 新增：使用IdGenerator生成主键
             entity.setId(idGenerator.generateId());

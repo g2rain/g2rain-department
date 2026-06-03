@@ -21,6 +21,11 @@ import lombok.Setter;
 public class DataPermissionModelPo extends BasePo {
 
     /**
+     * 权限模型名称
+     */
+    private String modelName;
+
+    /**
      * 模块编码，如 order, crm, inventory
      */
     private String moduleCode;

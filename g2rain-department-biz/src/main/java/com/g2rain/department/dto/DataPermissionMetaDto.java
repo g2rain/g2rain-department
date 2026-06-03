@@ -2,6 +2,8 @@ package com.g2rain.department.dto;
 
 import com.g2rain.common.model.BaseDto;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,26 +26,35 @@ public class DataPermissionMetaDto extends BaseDto {
     /**
      * 机构标识
      */
-    @Schema(description = "机构标识")
+    @NotNull
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "机构标识")
     private Long organId;
+
+    /**
+     * 权限策略名称
+     */
+    @NotBlank
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "权限策略名称")
+    private String metaName;
 
     /**
      * 权限模型标识
      */
-    @Schema(description = "权限模型标识")
+    @NotNull
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "权限模型标识")
     private Long modelId;
 
     /**
-     * 权限模式[例如 rw]
+     * 是否读操作
      */
-    @Schema(description = "权限模式[例如 rw]")
-    private Byte permissionMode;
+    @Schema(description = "是否读操作")
+    private boolean read;
 
     /**
-     * 状态[ACTIVE:有效, INACTIVE:停用]
+     * 是否写操作
      */
-    @Schema(description = "状态[ACTIVE:有效, INACTIVE:停用]")
-    private String status;
+    @Schema(description = "是否写操作")
+    private boolean write;
 
     /**
      * 备注

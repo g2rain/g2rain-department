@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
  *
  * @author G2rain Generator
  */
-@Mapper(uses = CommonConverter.class)
+@Mapper(uses = {CommonConverter.class, PermissionModeConverter.class})
 public interface DataPermissionOtherConverter {
 
     /**
@@ -29,6 +29,8 @@ public interface DataPermissionOtherConverter {
      * Po -> Vo
      * 自动将 createTime 和 updateTime 从 {@link LocalDateTime} 转换为 {@link String}
      */
+    @Mapping(target = "read", source = "permissionMode", qualifiedByName = "permissionModeToRead")
+    @Mapping(target = "write", source = "permissionMode", qualifiedByName = "permissionModeToWrite")
     @Mapping(target = "createTime", source = "createTime", qualifiedByName = "localDateTimeToString")
     @Mapping(target = "updateTime", source = "updateTime", qualifiedByName = "localDateTimeToString")
     DataPermissionOtherVo po2vo(DataPermissionOtherPo po);
@@ -39,6 +41,8 @@ public interface DataPermissionOtherConverter {
      * 忽略 version 字段
      * 忽略 deleteFlag 字段
      */
+    @Mapping(target = "permissionMode", source = ".", qualifiedByName = "otherDtoToPermissionMode")
+    @Mapping(target = "status", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "deleteFlag", ignore = true)
     @Mapping(target = "createTime", source = "createTime", qualifiedByName = "stringToLocalDateTime")

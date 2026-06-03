@@ -115,11 +115,11 @@
                     </from>
                     <!-- 目标镜像名称 -->
                     <to>
-                        <image>g2rain/g2rain-basis:${project.version}</image>
+                        <image>g2rain/g2rain-department:${project.version}</image>
                     </to>
                     <!-- 容器运行配置 -->
                     <container>
-                        <mainClass>com.g2rain.basis.Application</mainClass>
+                        <mainClass>com.g2rain.department.Application</mainClass>
                         <ports>
                             <port>8080</port>
                         </ports>
