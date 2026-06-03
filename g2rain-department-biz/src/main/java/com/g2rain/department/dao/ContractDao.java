@@ -1,5 +1,6 @@
 package com.g2rain.department.dao;
 
+import com.g2rain.data.isolation.annotations.DataIsolation;
 import com.g2rain.department.dao.po.ContractPo;
 import com.g2rain.department.dto.ContractSelectDto;
 import org.apache.ibatis.annotations.Mapper;
@@ -13,6 +14,7 @@ import java.util.List;
  * @author G2rain Generator
  */
 @Mapper
+@DataIsolation(isolationModule = "crm", isolationTable = "contract", userIdColumnName = "user_id", deptPathColumnName = "dept_path")
 public interface ContractDao {
 
     /**
