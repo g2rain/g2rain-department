@@ -2,6 +2,7 @@ package com.g2rain.department.dto;
 
 import com.g2rain.common.model.BaseDto;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,18 +25,21 @@ public class DepartmentUserRelationDto extends BaseDto {
     /**
      * 机构标识
      */
-    @Schema(description = "机构标识")
+    @NotNull
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "机构标识")
     private Long organId;
 
     /**
      * 部门标识
      */
-    @Schema(description = "部门标识")
+    @NotNull
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "部门标识")
     private Long departmentId;
 
     /**
      * 用户标识
      */
-    @Schema(description = "用户标识")
+    @NotNull
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "用户标识")
     private Long userId;
 }

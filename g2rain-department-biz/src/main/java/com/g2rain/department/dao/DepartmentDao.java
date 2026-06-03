@@ -1,8 +1,10 @@
 package com.g2rain.department.dao;
 
+import com.g2rain.data.isolation.annotations.DataIsolation;
 import com.g2rain.department.dao.po.DepartmentPo;
 import com.g2rain.department.dto.DepartmentSelectDto;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -13,6 +15,7 @@ import java.util.List;
  * @author G2rain Generator
  */
 @Mapper
+@DataIsolation(organIdPropertyName = "organId", organIdColumnName = "organ_id")
 public interface DepartmentDao {
 
     /**
@@ -62,6 +65,15 @@ public interface DepartmentDao {
      * @return 实体对象
      */
     DepartmentPo selectById(Long id);
+
+    /**
+     * 查询机构下指定父部门的最大当前层级编码
+     *
+     * @param organId 机构标识
+     * @param parentId 父部门标识
+     * @return 当前层级最大部门编码
+     */
+    String selectMaxDeptPath(@Param("organId") Long organId, @Param("parentId") Long parentId);
 
     /**
      * 根据查询入参 DTO 筛选列表

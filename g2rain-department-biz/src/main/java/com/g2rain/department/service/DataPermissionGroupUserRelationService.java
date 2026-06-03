@@ -4,6 +4,8 @@ import com.g2rain.common.model.PageData;
 import com.g2rain.common.model.PageSelectListDto;
 import com.g2rain.department.dto.DataPermissionGroupUserRelationDto;
 import com.g2rain.department.dto.DataPermissionGroupUserRelationSelectDto;
+import com.g2rain.department.dto.GroupAssignUsersDto;
+import com.g2rain.department.dto.UpdateStatusDto;
 import com.g2rain.department.vo.DataPermissionGroupUserRelationVo;
 
 import java.util.List;
@@ -41,10 +43,17 @@ public interface DataPermissionGroupUserRelationService {
     Long save(DataPermissionGroupUserRelationDto dto);
 
     /**
+     * 批量添加小组用户（已存在的关联自动忽略）
+     */
+    Integer addUsers(GroupAssignUsersDto dto);
+
+    /**
      * 根据 ID 删除数据
      *
      * @param id 主键 ID
      * @return 操作结果（影响行数）
      */
     int delete(Long id);
+
+    int updateStatus(Long id, UpdateStatusDto dto);
 }

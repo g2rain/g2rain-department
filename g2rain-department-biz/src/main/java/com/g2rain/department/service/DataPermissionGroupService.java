@@ -4,6 +4,7 @@ import com.g2rain.common.model.PageData;
 import com.g2rain.common.model.PageSelectListDto;
 import com.g2rain.department.dto.DataPermissionGroupDto;
 import com.g2rain.department.dto.DataPermissionGroupSelectDto;
+import com.g2rain.department.dto.UpdateStatusDto;
 import com.g2rain.department.vo.DataPermissionGroupVo;
 
 import java.util.List;
@@ -47,4 +48,6 @@ public interface DataPermissionGroupService {
      * @return 操作结果（影响行数）
      */
     int delete(Long id);
+
+    int updateStatus(Long id, UpdateStatusDto dto);
 }

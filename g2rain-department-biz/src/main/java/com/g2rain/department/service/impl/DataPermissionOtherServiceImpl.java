@@ -11,7 +11,11 @@ import com.g2rain.department.dao.DataPermissionOtherDao;
 import com.g2rain.department.dao.po.DataPermissionOtherPo;
 import com.g2rain.department.dto.DataPermissionOtherDto;
 import com.g2rain.department.dto.DataPermissionOtherSelectDto;
+import com.g2rain.department.dto.UpdateStatusDto;
+import com.g2rain.department.enums.CommonStatus;
+import com.g2rain.department.enums.DepartmentErrorCode;
 import com.g2rain.department.service.DataPermissionOtherService;
+import com.g2rain.department.service.support.CommonStatusUpdater;
 import com.g2rain.department.vo.DataPermissionOtherVo;
 import com.g2rain.mybatis.pagination.PageContext;
 import com.g2rain.mybatis.pagination.model.Page;
@@ -66,6 +70,14 @@ public class DataPermissionOtherServiceImpl implements DataPermissionOtherServic
 
     @Override
     public Long save(DataPermissionOtherDto dto) {
+        DataPermissionOtherSelectDto selectDto = new DataPermissionOtherSelectDto();
+        selectDto.setGroupId(dto.getGroupId());
+        selectDto.setMetaId(dto.getMetaId());
+        Long currentId = dto.getId();
+        boolean duplicated = dataPermissionOtherDao.selectList(selectDto).stream()
+            .anyMatch(item -> !Objects.equals(item.getId(), currentId));
+        Asserts.isTrue(!duplicated, DepartmentErrorCode.DATA_PERMISSION_OTHER_META_DUPLICATE);
+
         // 转换 DTO 为 PO
         DataPermissionOtherPo entity = DataPermissionOtherConverter.INSTANCE.dto2po(dto);
 
@@ -77,6 +89,7 @@ public class DataPermissionOtherServiceImpl implements DataPermissionOtherServic
             LocalDateTime now = Moments.now();
             entity.setUpdateTime(now);
             entity.setCreateTime(now);
+            entity.setStatus(CommonStatus.ACTIVE.name());
             int success = dataPermissionOtherDao.insert(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.CREATE_DATA_ERROR);
         } else {
@@ -92,5 +105,25 @@ public class DataPermissionOtherServiceImpl implements DataPermissionOtherServic
     @Override
     public int delete(Long id) {
         return dataPermissionOtherDao.delete(id);
+    }
+
+    @Override
+    public int updateStatus(Long id, UpdateStatusDto dto) {
+        return CommonStatusUpdater.update(
+            id,
+            dto,
+            () -> {
+                DataPermissionOtherPo entity = dataPermissionOtherDao.selectById(id);
+                return entity == null ? null : entity.getStatus();
+            },
+            () -> {
+                DataPermissionOtherPo entity = new DataPermissionOtherPo();
+                entity.setId(id);
+                entity.setStatus(dto.getStatus());
+                entity.setUpdateTime(Moments.now());
+                return dataPermissionOtherDao.update(entity);
+            },
+            "dataPermissionOther"
+        );
     }
 }

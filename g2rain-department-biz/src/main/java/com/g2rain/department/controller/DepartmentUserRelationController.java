@@ -1,6 +1,7 @@
 package com.g2rain.department.controller;
 
 import com.g2rain.department.api.DepartmentUserRelationApi;
+import com.g2rain.department.dto.DepartmentAssignUsersDto;
 import com.g2rain.department.dto.DepartmentUserRelationDto;
 import com.g2rain.department.dto.DepartmentUserRelationSelectDto;
 import com.g2rain.department.service.DepartmentUserRelationService;
@@ -11,6 +12,7 @@ import com.g2rain.department.vo.DepartmentUserRelationVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.annotation.Resource;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,10 +45,21 @@ public class DepartmentUserRelationController implements DepartmentUserRelationA
         return Result.successPage(departmentUserRelationService.selectPage(selectDto));
     }
 
+    @Override
+    public Result<String> getPrincipalEnrichment(Long organId, Long userId) {
+        return Result.success(departmentUserRelationService.getPrincipalEnrichment(organId, userId));
+    }
+
     @PostMapping("/save")
     @Operation(summary = "新增或更新部门人员关系表信息", description = "新增或更新部门人员关系表基础信息")
-    public Result<Long> save(@RequestBody DepartmentUserRelationDto dto) {
+    public Result<Long> save(@Validated @RequestBody DepartmentUserRelationDto dto) {
         return Result.success(departmentUserRelationService.save(dto));
+    }
+
+    @PostMapping("/add_users")
+    @Operation(summary = "批量添加部门用户", description = "批量添加部门用户关联，已存在的用户自动忽略")
+    public Result<Integer> addUsers(@RequestBody @Validated DepartmentAssignUsersDto dto) {
+        return Result.success(departmentUserRelationService.addUsers(dto));
     }
 
     @DeleteMapping("/{id}")

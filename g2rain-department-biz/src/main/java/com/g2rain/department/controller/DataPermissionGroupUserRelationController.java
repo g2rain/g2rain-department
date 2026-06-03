@@ -1,16 +1,19 @@
 package com.g2rain.department.controller;
 
-import com.g2rain.department.api.DataPermissionGroupUserRelationApi;
-import com.g2rain.department.dto.DataPermissionGroupUserRelationDto;
-import com.g2rain.department.dto.DataPermissionGroupUserRelationSelectDto;
-import com.g2rain.department.service.DataPermissionGroupUserRelationService;
 import com.g2rain.common.model.PageData;
 import com.g2rain.common.model.PageSelectListDto;
 import com.g2rain.common.model.Result;
+import com.g2rain.department.api.DataPermissionGroupUserRelationApi;
+import com.g2rain.department.dto.DataPermissionGroupUserRelationDto;
+import com.g2rain.department.dto.DataPermissionGroupUserRelationSelectDto;
+import com.g2rain.department.dto.GroupAssignUsersDto;
+import com.g2rain.department.dto.UpdateStatusDto;
+import com.g2rain.department.service.DataPermissionGroupUserRelationService;
 import com.g2rain.department.vo.DataPermissionGroupUserRelationVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.annotation.Resource;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,13 +48,25 @@ public class DataPermissionGroupUserRelationController implements DataPermission
 
     @PostMapping("/save")
     @Operation(summary = "新增或更新数据权限小组人员关系表信息", description = "新增或更新数据权限小组人员关系表基础信息")
-    public Result<Long> save(@RequestBody DataPermissionGroupUserRelationDto dto) {
+    public Result<Long> save(@Validated @RequestBody DataPermissionGroupUserRelationDto dto) {
         return Result.success(dataPermissionGroupUserRelationService.save(dto));
+    }
+
+    @PostMapping("/add_users")
+    @Operation(summary = "批量添加小组用户", description = "批量添加小组用户，已存在的关联自动忽略")
+    public Result<Integer> addUsers(@RequestBody @Validated GroupAssignUsersDto dto) {
+        return Result.success(dataPermissionGroupUserRelationService.addUsers(dto));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除数据权限小组人员关系表记录", description = "根据主键删除数据权限小组人员关系表记录")
     public Result<Integer> delete(@Parameter(description = "数据权限小组人员关系表标识") @PathVariable Long id) {
         return Result.success(dataPermissionGroupUserRelationService.delete(id));
+    }
+
+    @PostMapping("/{id}/status")
+    @Operation(summary = "修改小组用户关联状态", description = "修改小组用户关联状态")
+    public Result<Integer> updateStatus(@Parameter(description = "数据权限小组人员关系表标识") @PathVariable Long id, @RequestBody @Validated UpdateStatusDto dto) {
+        return Result.success(dataPermissionGroupUserRelationService.updateStatus(id, dto));
     }
 }

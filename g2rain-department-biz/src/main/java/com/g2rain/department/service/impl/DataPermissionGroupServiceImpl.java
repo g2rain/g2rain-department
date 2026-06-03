@@ -11,7 +11,9 @@ import com.g2rain.department.dao.DataPermissionGroupDao;
 import com.g2rain.department.dao.po.DataPermissionGroupPo;
 import com.g2rain.department.dto.DataPermissionGroupDto;
 import com.g2rain.department.dto.DataPermissionGroupSelectDto;
+import com.g2rain.department.dto.UpdateStatusDto;
 import com.g2rain.department.service.DataPermissionGroupService;
+import com.g2rain.department.service.support.CommonStatusUpdater;
 import com.g2rain.department.vo.DataPermissionGroupVo;
 import com.g2rain.mybatis.pagination.PageContext;
 import com.g2rain.mybatis.pagination.model.Page;
@@ -92,5 +94,25 @@ public class DataPermissionGroupServiceImpl implements DataPermissionGroupServic
     @Override
     public int delete(Long id) {
         return dataPermissionGroupDao.delete(id);
+    }
+
+    @Override
+    public int updateStatus(Long id, UpdateStatusDto dto) {
+        return CommonStatusUpdater.update(
+            id,
+            dto,
+            () -> {
+                DataPermissionGroupPo entity = dataPermissionGroupDao.selectById(id);
+                return entity == null ? null : entity.getStatus();
+            },
+            () -> {
+                DataPermissionGroupPo entity = new DataPermissionGroupPo();
+                entity.setId(id);
+                entity.setStatus(dto.getStatus());
+                entity.setUpdateTime(Moments.now());
+                return dataPermissionGroupDao.update(entity);
+            },
+            "dataPermissionGroup"
+        );
     }
 }

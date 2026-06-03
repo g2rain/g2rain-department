@@ -2,6 +2,7 @@ package com.g2rain.department.dto;
 
 import com.g2rain.common.model.BaseDto;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,24 +25,21 @@ public class DataPermissionGroupUserRelationDto extends BaseDto {
     /**
      * 机构标识
      */
-    @Schema(description = "机构标识")
+    @NotNull
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "机构标识")
     private Long organId;
 
     /**
      * 分组标识
      */
-    @Schema(description = "分组标识")
+    @NotNull
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "分组标识")
     private Long groupId;
 
     /**
      * 用户标识
      */
-    @Schema(description = "用户标识")
+    @NotNull
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "用户标识")
     private Long userId;
-
-    /**
-     * 状态[ACTIVE:有效, INACTIVE:停用]
-     */
-    @Schema(description = "状态[ACTIVE:有效, INACTIVE:停用]")
-    private String status;
 }

@@ -4,7 +4,10 @@ import com.g2rain.common.model.PageData;
 import com.g2rain.common.model.PageSelectListDto;
 import com.g2rain.department.dto.DataPermissionMetaDto;
 import com.g2rain.department.dto.DataPermissionMetaSelectDto;
+import com.g2rain.department.dto.DataPermissionPolicyResolveDto;
+import com.g2rain.department.dto.UpdateStatusDto;
 import com.g2rain.department.vo.DataPermissionMetaVo;
+import com.g2rain.department.vo.DataPermissionPolicyVo;
 
 import java.util.List;
 
@@ -33,6 +36,14 @@ public interface DataPermissionMetaService {
     PageData<DataPermissionMetaVo> selectPage(PageSelectListDto<DataPermissionMetaSelectDto> selectDto);
 
     /**
+     * 解析数据权限策略。
+     *
+     * @param resolveDto 解析查询参数
+     * @return 数据权限策略
+     */
+    DataPermissionPolicyVo resolveDataPermissionPolicy(DataPermissionPolicyResolveDto resolveDto);
+
+    /**
      * 新增或更新数据
      *
      * @param dto 数据传输对象
@@ -47,4 +58,6 @@ public interface DataPermissionMetaService {
      * @return 操作结果（影响行数）
      */
     int delete(Long id);
+
+    int updateStatus(Long id, UpdateStatusDto dto);
 }

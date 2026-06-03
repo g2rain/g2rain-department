@@ -11,6 +11,7 @@
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
         <!-- 业务字段（其他自定义字段） -->
+        <result column="model_name" property="modelName" jdbcType="VARCHAR"/>
         <result column="module_code" property="moduleCode" jdbcType="VARCHAR"/>
         <result column="table_name" property="tableName" jdbcType="VARCHAR"/>
         <result column="remark" property="remark" jdbcType="VARCHAR"/>
@@ -45,6 +46,10 @@
                         update_time
                         <include refid="directionClause"/>
                     </when>
+                    <when test="item.column == 'modelName'">
+                        model_name
+                        <include refid="directionClause"/>
+                    </when>
                     <when test="item.column == 'moduleCode'">
                         module_code
                         <include refid="directionClause"/>
@@ -70,7 +75,7 @@
         <!-- 基础字段 -->
         create_time, update_time,
         <!-- 业务字段 -->
-        module_code, table_name, remark,
+        model_name, module_code, table_name, remark,
         <!-- deleteFlag字段（如果存在） -->
         delete_flag,
         <!-- version字段（如果存在） -->
@@ -81,7 +86,7 @@
         <!-- 基础字段值 -->
         #{createTime, jdbcType=TIMESTAMP}, #{updateTime, jdbcType=TIMESTAMP},
         <!-- 业务字段值 -->
-        #{moduleCode, jdbcType=VARCHAR}, #{tableName, jdbcType=VARCHAR}, #{remark, jdbcType=VARCHAR},
+        #{modelName, jdbcType=VARCHAR}, #{moduleCode, jdbcType=VARCHAR}, #{tableName, jdbcType=VARCHAR}, #{remark, jdbcType=VARCHAR},
         <!-- deleteFlag字段值（如果存在，设置默认值为0） -->
         0,
         <!-- version字段值（如果存在，设置默认值为0） -->
@@ -97,7 +102,7 @@
         <!-- 基础字段 -->
         create_time, update_time,
         <!-- 业务字段 -->
-        module_code, table_name, remark,
+        model_name, module_code, table_name, remark,
         <!-- deleteFlag字段（如果存在） -->
         delete_flag,
         <!-- version字段（如果存在） -->
@@ -110,7 +115,7 @@
             <!-- 基础字段值 -->
             #{item.createTime, jdbcType=TIMESTAMP}, #{item.updateTime, jdbcType=TIMESTAMP},
             <!-- 业务字段值 -->
-            #{item.moduleCode, jdbcType=VARCHAR}, #{item.tableName, jdbcType=VARCHAR}, #{item.remark, jdbcType=VARCHAR},
+            #{item.modelName, jdbcType=VARCHAR}, #{item.moduleCode, jdbcType=VARCHAR}, #{item.tableName, jdbcType=VARCHAR}, #{item.remark, jdbcType=VARCHAR},
             <!-- deleteFlag字段值（如果存在，设置默认值为0） -->
             0,
             <!-- version字段值（如果存在，设置默认值为0） -->
@@ -128,6 +133,9 @@
                 update_time = #{updateTime, jdbcType=TIMESTAMP},
             </if>
             <!-- 业务字段更新 -->
+            <if test="modelName != null">
+                model_name = #{modelName, jdbcType=VARCHAR},
+            </if>
             <if test="moduleCode != null">
                 module_code = #{moduleCode, jdbcType=VARCHAR},
             </if>
@@ -152,6 +160,9 @@
                 update_time = #{updateTime, jdbcType=TIMESTAMP},
             </if>
             <!-- 业务字段更新 -->
+            <if test="modelName != null">
+                model_name = #{modelName, jdbcType=VARCHAR},
+            </if>
             <if test="moduleCode != null">
                 module_code = #{moduleCode, jdbcType=VARCHAR},
             </if>
@@ -187,7 +198,7 @@
         <!-- 基础字段 -->
         create_time, update_time,
         <!-- 业务字段 -->
-        module_code, table_name, remark,
+        model_name, module_code, table_name, remark,
         <!-- deleteFlag字段（如果存在） -->
         delete_flag,
         <!-- version字段（如果存在） -->
@@ -206,7 +217,7 @@
         <!-- 基础字段 -->
         create_time, update_time,
         <!-- 业务字段 -->
-        module_code, table_name, remark,
+        model_name, module_code, table_name, remark,
         <!-- deleteFlag字段（如果存在） -->
         delete_flag,
         <!-- version字段（如果存在） -->
@@ -249,6 +260,9 @@
                 </if>
             </if>
             <!-- 业务字段筛选 -->
+            <if test="modelName != null">
+                AND model_name = #{modelName, jdbcType=VARCHAR}
+            </if>
             <if test="moduleCode != null">
                 AND module_code = #{moduleCode, jdbcType=VARCHAR}
             </if>

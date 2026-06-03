@@ -1,7 +1,11 @@
 package com.g2rain.department.dao;
 
+import com.g2rain.data.isolation.annotations.DataIsolation;
+import com.g2rain.data.isolation.annotations.IgnoreIsolation;
 import com.g2rain.department.dao.po.DataPermissionMetaPo;
 import com.g2rain.department.dto.DataPermissionMetaSelectDto;
+import com.g2rain.department.dto.DataPermissionPolicyResolveDto;
+import com.g2rain.department.dao.po.DataPermissionPolicyPo;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
@@ -13,6 +17,7 @@ import java.util.List;
  * @author G2rain Generator
  */
 @Mapper
+@DataIsolation(organIdPropertyName = "organId", organIdColumnName = "organ_id")
 public interface DataPermissionMetaDao {
 
     /**
@@ -70,4 +75,13 @@ public interface DataPermissionMetaDao {
      * @return 实体对象列表
      */
     List<DataPermissionMetaPo> selectList(DataPermissionMetaSelectDto selectDto);
+
+    /**
+     * 解析数据权限策略。
+     *
+     * @param resolveDto 解析查询参数
+     * @return 数据权限策略
+     */
+    @IgnoreIsolation
+    DataPermissionPolicyPo resolveDataPermissionPolicy(DataPermissionPolicyResolveDto resolveDto);
 }

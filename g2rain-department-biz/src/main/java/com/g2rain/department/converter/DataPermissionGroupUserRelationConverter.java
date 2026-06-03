@@ -39,6 +39,7 @@ public interface DataPermissionGroupUserRelationConverter {
      * 忽略 version 字段
      * 忽略 deleteFlag 字段
      */
+    @Mapping(target = "status", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "deleteFlag", ignore = true)
     @Mapping(target = "createTime", source = "createTime", qualifiedByName = "stringToLocalDateTime")
