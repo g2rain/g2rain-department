@@ -23,6 +23,8 @@ import com.g2rain.department.enums.CommonStatus;
 import com.g2rain.department.enums.DepartmentErrorCode;
 import com.g2rain.department.service.DataPermissionMetaService;
 import com.g2rain.department.service.support.CommonStatusUpdater;
+import com.g2rain.department.service.support.DataPermissionPolicyCacheBroadcaster;
+import com.g2rain.department.service.support.DataPermissionPolicyChangeDetector;
 import com.g2rain.department.vo.DataPermissionMetaVo;
 import com.g2rain.department.vo.DataPermissionPolicyVo;
 import com.g2rain.mybatis.pagination.PageContext;
@@ -53,6 +55,9 @@ public class DataPermissionMetaServiceImpl implements DataPermissionMetaService 
 
     @Resource(name = "dataPermissionModelDao")
     private DataPermissionModelDao dataPermissionModelDao;
+
+    @Resource
+    private DataPermissionPolicyCacheBroadcaster policyCacheBroadcaster;
 
     private IdGenerator idGenerator;
 
@@ -121,6 +126,7 @@ public class DataPermissionMetaServiceImpl implements DataPermissionMetaService 
         DataPermissionMetaPo entity = DataPermissionMetaConverter.INSTANCE.dto2po(dto);
 
         Long id = entity.getId();
+        DataPermissionMetaPo before = Objects.nonNull(id) && id > 0 ? dataPermissionMetaDao.selectById(id) : null;
         if (Objects.isNull(id) || id == 0) {
             entity.setId(idGenerator.generateId());
             LocalDateTime now = Moments.now();
@@ -129,10 +135,14 @@ public class DataPermissionMetaServiceImpl implements DataPermissionMetaService 
             entity.setStatus(CommonStatus.ACTIVE.name());
             int success = dataPermissionMetaDao.insert(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.CREATE_DATA_ERROR);
+            policyCacheBroadcaster.broadcastByMeta(entity);
         } else {
             entity.setUpdateTime(Moments.now());
             int success = dataPermissionMetaDao.update(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.UPDATE_DATA_ERROR, id);
+            if (DataPermissionPolicyChangeDetector.metaAffecting(before, entity)) {
+                policyCacheBroadcaster.broadcastMetaChange(before, entity);
+            }
         }
 
         return entity.getId();
@@ -140,12 +150,18 @@ public class DataPermissionMetaServiceImpl implements DataPermissionMetaService 
 
     @Override
     public int delete(Long id) {
-        return dataPermissionMetaDao.delete(id);
+        DataPermissionMetaPo meta = dataPermissionMetaDao.selectById(id);
+        int deleted = dataPermissionMetaDao.delete(id);
+        if (deleted > 0) {
+            policyCacheBroadcaster.broadcastByMeta(meta);
+        }
+        return deleted;
     }
 
     @Override
     public int updateStatus(Long id, UpdateStatusDto dto) {
-        return CommonStatusUpdater.update(
+        DataPermissionMetaPo before = dataPermissionMetaDao.selectById(id);
+        int updated = CommonStatusUpdater.update(
             id,
             dto,
             () -> {
@@ -161,5 +177,9 @@ public class DataPermissionMetaServiceImpl implements DataPermissionMetaService 
             },
             "dataPermissionMeta"
         );
+        if (updated > 0 && Objects.nonNull(before) && !Objects.equals(before.getStatus(), dto.getStatus())) {
+            policyCacheBroadcaster.broadcastByMeta(before);
+        }
+        return updated;
     }
 }

@@ -17,6 +17,10 @@ public final class DeptUtils {
 
     public static final Long ROOT_PARENT_ID = 0L;
 
+    public static final String SYNC_OUTPUT_BINDING = "output";
+
+    public static final String DATA_PERMISSION_POLICY_SOURCE = "DATA_PERMISSION_POLICY";
+
     private static final int PATH_SEGMENT_WIDTH = 4;
 
     private static final int PATH_SEGMENT_RADIX = 36;

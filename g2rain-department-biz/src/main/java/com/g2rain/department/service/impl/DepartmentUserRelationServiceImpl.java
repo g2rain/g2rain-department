@@ -16,6 +16,7 @@ import com.g2rain.department.dto.DepartmentAssignUsersDto;
 import com.g2rain.department.dto.DepartmentUserRelationDto;
 import com.g2rain.department.dto.DepartmentUserRelationSelectDto;
 import com.g2rain.department.service.DepartmentUserRelationService;
+import com.g2rain.department.service.support.DataPermissionPolicyCacheBroadcaster;
 import com.g2rain.department.vo.DepartmentUserRelationVo;
 import com.g2rain.mybatis.pagination.PageContext;
 import com.g2rain.mybatis.pagination.model.Page;
@@ -45,6 +46,9 @@ public class DepartmentUserRelationServiceImpl implements DepartmentUserRelation
 
     @Resource(name = "departmentDao")
     private DepartmentDao departmentDao;
+
+    @Resource
+    private DataPermissionPolicyCacheBroadcaster policyCacheBroadcaster;
 
     private IdGenerator idGenerator;
 
@@ -84,6 +88,7 @@ public class DepartmentUserRelationServiceImpl implements DepartmentUserRelation
         DepartmentUserRelationPo entity = DepartmentUserRelationConverter.INSTANCE.dto2po(dto);
 
         Long id = entity.getId();
+        DepartmentUserRelationPo before = Objects.nonNull(id) && id > 0 ? departmentUserRelationDao.selectById(id) : null;
         if (Objects.isNull(id) || id == 0) {
             entity.setId(idGenerator.generateId());
             LocalDateTime now = Moments.now();
@@ -91,10 +96,12 @@ public class DepartmentUserRelationServiceImpl implements DepartmentUserRelation
             entity.setCreateTime(now);
             int success = departmentUserRelationDao.insert(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.CREATE_DATA_ERROR);
+            policyCacheBroadcaster.broadcastOrganUser(entity.getOrganId(), entity.getUserId());
         } else {
             entity.setUpdateTime(Moments.now());
             int success = departmentUserRelationDao.update(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.UPDATE_DATA_ERROR, id);
+            policyCacheBroadcaster.broadcastDepartmentUserRelationChange(before, entity);
         }
 
         return entity.getId();
@@ -141,11 +148,18 @@ public class DepartmentUserRelationServiceImpl implements DepartmentUserRelation
             return relation;
         }).toList();
 
-        return departmentUserRelationDao.insertMultiple(relations);
+        int inserted = departmentUserRelationDao.insertMultiple(relations);
+        userIds.forEach(userId -> policyCacheBroadcaster.broadcastOrganUser(organId, userId));
+        return inserted;
     }
 
     @Override
     public int delete(Long id) {
-        return departmentUserRelationDao.delete(id);
+        DepartmentUserRelationPo relation = departmentUserRelationDao.selectById(id);
+        int deleted = departmentUserRelationDao.delete(id);
+        if (deleted > 0 && Objects.nonNull(relation)) {
+            policyCacheBroadcaster.broadcastOrganUser(relation.getOrganId(), relation.getUserId());
+        }
+        return deleted;
     }
 }

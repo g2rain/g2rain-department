@@ -19,6 +19,8 @@ import com.g2rain.department.dto.UpdateStatusDto;
 import com.g2rain.department.enums.CommonStatus;
 import com.g2rain.department.service.DataPermissionGroupUserRelationService;
 import com.g2rain.department.service.support.CommonStatusUpdater;
+import com.g2rain.department.service.support.DataPermissionPolicyCacheBroadcaster;
+import com.g2rain.department.service.support.DataPermissionPolicyChangeDetector;
 import com.g2rain.department.vo.DataPermissionGroupUserRelationVo;
 import com.g2rain.mybatis.pagination.PageContext;
 import com.g2rain.mybatis.pagination.model.Page;
@@ -48,6 +50,9 @@ public class DataPermissionGroupUserRelationServiceImpl implements DataPermissio
 
     @Resource(name = "dataPermissionGroupDao")
     private DataPermissionGroupDao dataPermissionGroupDao;
+
+    @Resource
+    private DataPermissionPolicyCacheBroadcaster policyCacheBroadcaster;
 
     private IdGenerator idGenerator;
 
@@ -79,13 +84,12 @@ public class DataPermissionGroupUserRelationServiceImpl implements DataPermissio
 
     @Override
     public Long save(DataPermissionGroupUserRelationDto dto) {
-        // 转换 DTO 为 PO
         DataPermissionGroupUserRelationPo entity = DataPermissionGroupUserRelationConverter.INSTANCE.dto2po(dto);
 
-        // 判断是新增还是更新
         Long id = entity.getId();
+        DataPermissionGroupUserRelationPo before = Objects.nonNull(id) && id > 0
+            ? dataPermissionGroupUserRelationDao.selectById(id) : null;
         if (Objects.isNull(id) || id == 0) {
-            // 新增：使用IdGenerator生成主键
             entity.setId(idGenerator.generateId());
             LocalDateTime now = Moments.now();
             entity.setUpdateTime(now);
@@ -93,11 +97,14 @@ public class DataPermissionGroupUserRelationServiceImpl implements DataPermissio
             entity.setStatus(CommonStatus.ACTIVE.name());
             int success = dataPermissionGroupUserRelationDao.insert(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.CREATE_DATA_ERROR);
+            policyCacheBroadcaster.broadcastOrganUser(entity.getOrganId(), entity.getUserId());
         } else {
-            // 更新：直接更新
             entity.setUpdateTime(Moments.now());
             int success = dataPermissionGroupUserRelationDao.update(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.UPDATE_DATA_ERROR, id);
+            if (DataPermissionPolicyChangeDetector.groupUserRelationAffecting(before, entity)) {
+                policyCacheBroadcaster.broadcastGroupUserRelationChange(before, entity);
+            }
         }
 
         return entity.getId();
@@ -143,17 +150,25 @@ public class DataPermissionGroupUserRelationServiceImpl implements DataPermissio
             return relation;
         }).toList();
 
-        return dataPermissionGroupUserRelationDao.insertMultiple(relations);
+        int inserted = dataPermissionGroupUserRelationDao.insertMultiple(relations);
+        relations.forEach(relation -> policyCacheBroadcaster.broadcastOrganUser(relation.getOrganId(), relation.getUserId()));
+        return inserted;
     }
 
     @Override
     public int delete(Long id) {
-        return dataPermissionGroupUserRelationDao.delete(id);
+        DataPermissionGroupUserRelationPo relation = dataPermissionGroupUserRelationDao.selectById(id);
+        int deleted = dataPermissionGroupUserRelationDao.delete(id);
+        if (deleted > 0) {
+            policyCacheBroadcaster.broadcastOrganUser(relation.getOrganId(), relation.getUserId());
+        }
+        return deleted;
     }
 
     @Override
     public int updateStatus(Long id, UpdateStatusDto dto) {
-        return CommonStatusUpdater.update(
+        DataPermissionGroupUserRelationPo before = dataPermissionGroupUserRelationDao.selectById(id);
+        int updated = CommonStatusUpdater.update(
             id,
             dto,
             () -> {
@@ -169,5 +184,9 @@ public class DataPermissionGroupUserRelationServiceImpl implements DataPermissio
             },
             "dataPermissionGroupUserRelation"
         );
+        if (updated > 0 && Objects.nonNull(before) && !Objects.equals(before.getStatus(), dto.getStatus())) {
+            policyCacheBroadcaster.broadcastOrganUser(before.getOrganId(), before.getUserId());
+        }
+        return updated;
     }
 }

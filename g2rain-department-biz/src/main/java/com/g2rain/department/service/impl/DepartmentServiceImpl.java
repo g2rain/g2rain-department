@@ -16,6 +16,7 @@ import com.g2rain.department.dto.UpdateStatusDto;
 import com.g2rain.department.enums.CommonStatus;
 import com.g2rain.department.service.DepartmentService;
 import com.g2rain.department.service.support.CommonStatusUpdater;
+import com.g2rain.department.service.support.DataPermissionPolicyCacheBroadcaster;
 import com.g2rain.department.utils.DeptUtils;
 import com.g2rain.department.vo.DepartmentVo;
 import com.g2rain.mybatis.pagination.PageContext;
@@ -41,6 +42,9 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Resource(name = "departmentDao")
     private DepartmentDao departmentDao;
+
+    @Resource
+    private DataPermissionPolicyCacheBroadcaster policyCacheBroadcaster;
 
     private IdGenerator idGenerator;
 
@@ -80,6 +84,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         // 判断是新增还是更新
         Long id = entity.getId();
         if (Objects.nonNull(id) && id > 0) {
+            DepartmentPo before = departmentDao.selectById(id);
             Optional.ofNullable(dto.getParentId()).ifPresent(parentId -> {
                 Asserts.isTrue(!parentId.equals(id), SystemErrorCode.PARAM_VAL_INVALID, "parentId");
 
@@ -106,6 +111,7 @@ public class DepartmentServiceImpl implements DepartmentService {
             // 更新：直接更新
             int success = departmentDao.update(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.UPDATE_DATA_ERROR, id);
+            policyCacheBroadcaster.broadcastDepartmentLeaderChange(before, entity);
             return id;
         }
 
@@ -140,7 +146,8 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     public int updateStatus(Long id, UpdateStatusDto dto) {
-        return CommonStatusUpdater.update(
+        DepartmentPo before = departmentDao.selectById(id);
+        int updated = CommonStatusUpdater.update(
             id,
             dto,
             () -> {
@@ -156,5 +163,10 @@ public class DepartmentServiceImpl implements DepartmentService {
             },
             "department"
         );
+        if (updated > 0 && Objects.nonNull(before) && !Objects.equals(before.getStatus(), dto.getStatus())) {
+            DepartmentPo after = departmentDao.selectById(id);
+            policyCacheBroadcaster.broadcastDepartmentLeaderChange(before, after);
+        }
+        return updated;
     }
 }
