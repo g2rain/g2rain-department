@@ -42,9 +42,12 @@ spring:
     # syncer 消息通道
     stream:
       default-binder: redis
+      input-bindings: input
       output-bindings: output
       bindings:
         output:
+          destination: g2rain-syncer
+        input:
           destination: g2rain-syncer
 
   # 外链 nacos 的配置中心的配置文件
