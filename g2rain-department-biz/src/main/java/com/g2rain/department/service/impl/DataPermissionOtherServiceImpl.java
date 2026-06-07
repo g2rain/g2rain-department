@@ -16,6 +16,8 @@ import com.g2rain.department.enums.CommonStatus;
 import com.g2rain.department.enums.DepartmentErrorCode;
 import com.g2rain.department.service.DataPermissionOtherService;
 import com.g2rain.department.service.support.CommonStatusUpdater;
+import com.g2rain.department.service.support.DataPermissionPolicyCacheBroadcaster;
+import com.g2rain.department.service.support.DataPermissionPolicyChangeDetector;
 import com.g2rain.department.vo.DataPermissionOtherVo;
 import com.g2rain.mybatis.pagination.PageContext;
 import com.g2rain.mybatis.pagination.model.Page;
@@ -39,6 +41,9 @@ public class DataPermissionOtherServiceImpl implements DataPermissionOtherServic
 
     @Resource(name = "dataPermissionOtherDao")
     private DataPermissionOtherDao dataPermissionOtherDao;
+
+    @Resource
+    private DataPermissionPolicyCacheBroadcaster policyCacheBroadcaster;
 
     private IdGenerator idGenerator;
 
@@ -78,13 +83,11 @@ public class DataPermissionOtherServiceImpl implements DataPermissionOtherServic
             .anyMatch(item -> !Objects.equals(item.getId(), currentId));
         Asserts.isTrue(!duplicated, DepartmentErrorCode.DATA_PERMISSION_OTHER_META_DUPLICATE);
 
-        // 转换 DTO 为 PO
         DataPermissionOtherPo entity = DataPermissionOtherConverter.INSTANCE.dto2po(dto);
 
-        // 判断是新增还是更新
         Long id = entity.getId();
+        DataPermissionOtherPo before = Objects.nonNull(id) && id > 0 ? dataPermissionOtherDao.selectById(id) : null;
         if (Objects.isNull(id) || id == 0) {
-            // 新增：使用IdGenerator生成主键
             entity.setId(idGenerator.generateId());
             LocalDateTime now = Moments.now();
             entity.setUpdateTime(now);
@@ -92,11 +95,14 @@ public class DataPermissionOtherServiceImpl implements DataPermissionOtherServic
             entity.setStatus(CommonStatus.ACTIVE.name());
             int success = dataPermissionOtherDao.insert(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.CREATE_DATA_ERROR);
+            policyCacheBroadcaster.broadcastByOther(entity);
         } else {
-            // 更新：直接更新
             entity.setUpdateTime(Moments.now());
             int success = dataPermissionOtherDao.update(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.UPDATE_DATA_ERROR, id);
+            if (DataPermissionPolicyChangeDetector.otherAffecting(before, entity)) {
+                policyCacheBroadcaster.broadcastOtherChange(before, entity);
+            }
         }
 
         return entity.getId();
@@ -104,12 +110,18 @@ public class DataPermissionOtherServiceImpl implements DataPermissionOtherServic
 
     @Override
     public int delete(Long id) {
-        return dataPermissionOtherDao.delete(id);
+        DataPermissionOtherPo other = dataPermissionOtherDao.selectById(id);
+        int deleted = dataPermissionOtherDao.delete(id);
+        if (deleted > 0) {
+            policyCacheBroadcaster.broadcastByOther(other);
+        }
+        return deleted;
     }
 
     @Override
     public int updateStatus(Long id, UpdateStatusDto dto) {
-        return CommonStatusUpdater.update(
+        DataPermissionOtherPo before = dataPermissionOtherDao.selectById(id);
+        int updated = CommonStatusUpdater.update(
             id,
             dto,
             () -> {
@@ -125,5 +137,9 @@ public class DataPermissionOtherServiceImpl implements DataPermissionOtherServic
             },
             "dataPermissionOther"
         );
+        if (updated > 0 && Objects.nonNull(before) && !Objects.equals(before.getStatus(), dto.getStatus())) {
+            policyCacheBroadcaster.broadcastByOther(before);
+        }
+        return updated;
     }
 }

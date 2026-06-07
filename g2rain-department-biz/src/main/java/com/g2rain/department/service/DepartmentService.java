@@ -5,6 +5,7 @@ import com.g2rain.common.model.PageSelectListDto;
 import com.g2rain.department.dto.DepartmentDto;
 import com.g2rain.department.dto.DepartmentSelectDto;
 import com.g2rain.department.dto.UpdateStatusDto;
+import com.g2rain.department.vo.DepartmentTreeVo;
 import com.g2rain.department.vo.DepartmentVo;
 
 import java.util.List;
@@ -32,6 +33,14 @@ public interface DepartmentService {
      * @return 分页 VO 数据
      */
     PageData<DepartmentVo> selectPage(PageSelectListDto<DepartmentSelectDto> selectDto);
+
+    /**
+     * 查询部门树形结构
+     *
+     * @param selectDto 查询条件 DTO
+     * @return 部门树形结构
+     */
+    List<DepartmentTreeVo> selectTree(DepartmentSelectDto selectDto);
 
     /**
      * 新增或更新数据

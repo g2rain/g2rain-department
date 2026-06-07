@@ -316,29 +316,9 @@
     <select id="resolveDataPermissionPolicy" parameterType="com.g2rain.department.dto.DataPermissionPolicyResolveDto" resultMap="PolicyResultMap">
         SELECT
             meta.id AS meta_id,
-            CASE
-                WHEN meta.permission_mode = 0
-                    AND EXISTS (
-                        SELECT 1
-                        FROM department d
-                        WHERE d.organ_id = #{organId, jdbcType=BIGINT}
-                            AND d.leader_user_id = #{userId, jdbcType=BIGINT}
-                            AND d.status = 'ACTIVE'
-                            AND d.delete_flag = 0
-                            AND d.dept_path IN
-                            <foreach collection="deptPathSet" item="deptPath" open="(" separator="," close=")">
-                                #{deptPath, jdbcType=VARCHAR}
-                            </foreach>
-                    )
-                THEN 2
-                ELSE meta.permission_mode
-            END AS group_permission_mode,
+            meta.permission_mode AS group_permission_mode,
             CAST(COALESCE(BIT_OR(other_rule.permission_mode), 0) AS SIGNED) AS other_permission_mode,
-            GROUP_CONCAT(
-                DISTINCT CONCAT('(', other_rule.permission_rule, ')')
-                ORDER BY other_rule.id
-                SEPARATOR ' OR '
-            ) AS permission_rule
+            GROUP_CONCAT(DISTINCT CONCAT('(', other_rule.permission_rule, ')') ORDER BY other_rule.id SEPARATOR ' OR ') AS permission_rule
         FROM data_permission_model model
         INNER JOIN data_permission_meta meta
             ON meta.model_id = model.id

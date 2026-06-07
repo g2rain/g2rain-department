@@ -16,7 +16,9 @@ import com.g2rain.department.dto.UpdateStatusDto;
 import com.g2rain.department.enums.CommonStatus;
 import com.g2rain.department.service.DepartmentService;
 import com.g2rain.department.service.support.CommonStatusUpdater;
+import com.g2rain.department.service.support.DataPermissionPolicyCacheBroadcaster;
 import com.g2rain.department.utils.DeptUtils;
+import com.g2rain.department.vo.DepartmentTreeVo;
 import com.g2rain.department.vo.DepartmentVo;
 import com.g2rain.mybatis.pagination.PageContext;
 import com.g2rain.mybatis.pagination.model.Page;
@@ -26,9 +28,16 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Queue;
 
 /**
  * 部门表服务实现类
@@ -42,6 +51,9 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Resource(name = "departmentDao")
     private DepartmentDao departmentDao;
 
+    @Resource
+    private DataPermissionPolicyCacheBroadcaster policyCacheBroadcaster;
+
     private IdGenerator idGenerator;
 
     @Qualifier("idGenerator")
@@ -53,9 +65,9 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     public List<DepartmentVo> selectList(DepartmentSelectDto selectDto) {
         return departmentDao.selectList(selectDto)
-                .stream()
-                .map(DepartmentConverter.INSTANCE::po2vo)
-                .toList();
+            .stream()
+            .map(DepartmentConverter.INSTANCE::po2vo)
+            .toList();
     }
 
     @Override
@@ -64,10 +76,73 @@ public class DepartmentServiceImpl implements DepartmentService {
             departmentDao.selectList(selectDto.getQuery());
         });
         List<DepartmentVo> result = page.getResult()
-                .stream()
-                .map(DepartmentConverter.INSTANCE::po2vo)
-                .toList();
+            .stream()
+            .map(DepartmentConverter.INSTANCE::po2vo)
+            .toList();
         return PageData.of(page.getPageNum(), page.getPageSize(), page.getTotal(), result);
+    }
+
+    @Override
+    public List<DepartmentTreeVo> selectTree(DepartmentSelectDto selectDto) {
+        selectDto.setStatus(CommonStatus.ACTIVE.name());
+        List<DepartmentPo> poList = departmentDao.selectList(selectDto);
+        if (poList.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, DepartmentTreeVo> id2node = HashMap.newHashMap(poList.size());
+        Map<Long, Integer> sortOrderById = HashMap.newHashMap(poList.size());
+        for (DepartmentPo po : poList) {
+            DepartmentTreeVo node = new DepartmentTreeVo();
+            node.setDeptPath(po.getDeptPath());
+            node.setDeptName(po.getDeptName());
+            node.setChildren(new ArrayList<>());
+            id2node.put(po.getId(), node);
+            sortOrderById.put(po.getId(), po.getSortOrder());
+        }
+
+        List<DepartmentTreeVo> roots = new ArrayList<>();
+        for (DepartmentPo po : poList) {
+            DepartmentTreeVo node = id2node.get(po.getId());
+            Long parentId = po.getParentId();
+            if (Objects.isNull(parentId) || parentId.equals(DeptUtils.ROOT_PARENT_ID)) {
+                roots.add(node);
+                continue;
+            }
+
+            DepartmentTreeVo parent = id2node.get(parentId);
+            if (Objects.isNull(parent)) {
+                roots.add(node);
+                continue;
+            }
+
+            parent.getChildren().add(node);
+        }
+
+        Map<DepartmentTreeVo, Long> node2id = new IdentityHashMap<>();
+        for (Map.Entry<Long, DepartmentTreeVo> entry : id2node.entrySet()) {
+            node2id.put(entry.getValue(), entry.getKey());
+        }
+
+        Comparator<DepartmentTreeVo> order = Comparator
+            .comparing((DepartmentTreeVo node) -> sortOrderById.get(node2id.get(node)),
+                Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(node2id::get, Comparator.nullsLast(Comparator.naturalOrder()));
+
+        Queue<List<DepartmentTreeVo>> queue = new LinkedList<>();
+        queue.add(roots);
+        while (!queue.isEmpty()) {
+            List<DepartmentTreeVo> level = queue.poll();
+            level.sort(order);
+            for (DepartmentTreeVo node : level) {
+                if (!node.getChildren().isEmpty()) {
+                    queue.add(node.getChildren());
+                }
+            }
+        }
+
+        roots.sort(order);
+        return roots;
     }
 
     @Override
@@ -80,6 +155,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         // 判断是新增还是更新
         Long id = entity.getId();
         if (Objects.nonNull(id) && id > 0) {
+            DepartmentPo before = departmentDao.selectById(id);
             Optional.ofNullable(dto.getParentId()).ifPresent(parentId -> {
                 Asserts.isTrue(!parentId.equals(id), SystemErrorCode.PARAM_VAL_INVALID, "parentId");
 
@@ -106,6 +182,7 @@ public class DepartmentServiceImpl implements DepartmentService {
             // 更新：直接更新
             int success = departmentDao.update(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.UPDATE_DATA_ERROR, id);
+            policyCacheBroadcaster.broadcastDepartmentLeaderChange(before, entity);
             return id;
         }
 
@@ -140,7 +217,8 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     public int updateStatus(Long id, UpdateStatusDto dto) {
-        return CommonStatusUpdater.update(
+        DepartmentPo before = departmentDao.selectById(id);
+        int updated = CommonStatusUpdater.update(
             id,
             dto,
             () -> {
@@ -156,5 +234,10 @@ public class DepartmentServiceImpl implements DepartmentService {
             },
             "department"
         );
+        if (updated > 0 && Objects.nonNull(before) && !Objects.equals(before.getStatus(), dto.getStatus())) {
+            DepartmentPo after = departmentDao.selectById(id);
+            policyCacheBroadcaster.broadcastDepartmentLeaderChange(before, after);
+        }
+        return updated;
     }
 }

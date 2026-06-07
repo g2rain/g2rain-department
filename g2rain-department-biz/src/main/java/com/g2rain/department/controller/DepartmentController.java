@@ -8,6 +8,7 @@ import com.g2rain.department.service.DepartmentService;
 import com.g2rain.common.model.PageData;
 import com.g2rain.common.model.PageSelectListDto;
 import com.g2rain.common.model.Result;
+import com.g2rain.department.vo.DepartmentTreeVo;
 import com.g2rain.department.vo.DepartmentVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -43,6 +44,11 @@ public class DepartmentController implements DepartmentApi {
     @Override
     public Result<PageData<DepartmentVo>> selectPage(PageSelectListDto<DepartmentSelectDto> selectDto) {
         return Result.successPage(departmentService.selectPage(selectDto));
+    }
+
+    @Override
+    public Result<List<DepartmentTreeVo>> selectTree(DepartmentSelectDto selectDto) {
+        return Result.success(departmentService.selectTree(selectDto));
     }
 
     @PostMapping("/save")
