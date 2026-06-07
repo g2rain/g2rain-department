@@ -2,6 +2,8 @@ package com.g2rain.department.dto;
 
 import com.g2rain.common.model.BaseDto;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,30 +26,33 @@ public class DataPermissionOtherDto extends BaseDto {
     /**
      * 关联 data_permission_meta.id
      */
+    @NotNull
     @Schema(description = "关联 data_permission_meta.id")
     private Long metaId;
 
     /**
      * 分组标识
      */
+    @NotNull
     @Schema(description = "分组标识")
     private Long groupId;
 
     /**
-     * 权限模式[例如 rw]
+     * 是否读操作
      */
-    @Schema(description = "权限模式[例如 rw]")
-    private Byte permissionMode;
+    @Schema(description = "是否读操作")
+    private boolean read;
 
     /**
-     * 状态[ACTIVE:有效, INACTIVE:停用]
+     * 是否写操作
      */
-    @Schema(description = "状态[ACTIVE:有效, INACTIVE:停用]")
-    private String status;
+    @Schema(description = "是否写操作")
+    private boolean write;
 
     /**
      * 权限规则
      */
+    @NotBlank
     @Schema(description = "权限规则")
     private String permissionRule;
 }

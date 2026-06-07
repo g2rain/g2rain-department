@@ -23,6 +23,12 @@ import lombok.Setter;
 public class DataPermissionModelSelectDto extends BaseSelectListDto {
 
     /**
+     * 权限模型名称
+     */
+    @Schema(description = "权限模型名称")
+    private String modelName;
+
+    /**
      * 模块编码，如 order, crm, inventory
      */
     @Schema(description = "模块编码，如 order, crm, inventory")

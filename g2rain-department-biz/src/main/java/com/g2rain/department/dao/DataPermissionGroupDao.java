@@ -1,5 +1,6 @@
 package com.g2rain.department.dao;
 
+import com.g2rain.data.isolation.annotations.DataIsolation;
 import com.g2rain.department.dao.po.DataPermissionGroupPo;
 import com.g2rain.department.dto.DataPermissionGroupSelectDto;
 import org.apache.ibatis.annotations.Mapper;
@@ -13,6 +14,7 @@ import java.util.List;
  * @author G2rain Generator
  */
 @Mapper
+@DataIsolation(organIdPropertyName = "organId", organIdColumnName = "organ_id")
 public interface DataPermissionGroupDao {
 
     /**

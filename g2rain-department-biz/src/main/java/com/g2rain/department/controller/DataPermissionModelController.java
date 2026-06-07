@@ -11,6 +11,7 @@ import com.g2rain.department.vo.DataPermissionModelVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.annotation.Resource;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,7 +46,7 @@ public class DataPermissionModelController implements DataPermissionModelApi {
 
     @PostMapping("/save")
     @Operation(summary = "新增或更新数据权限模型全局元数据表信息", description = "新增或更新数据权限模型全局元数据表基础信息")
-    public Result<Long> save(@RequestBody DataPermissionModelDto dto) {
+    public Result<Long> save(@Validated @RequestBody DataPermissionModelDto dto) {
         return Result.success(dataPermissionModelService.save(dto));
     }
 

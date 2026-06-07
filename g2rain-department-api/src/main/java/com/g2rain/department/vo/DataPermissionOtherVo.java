@@ -36,10 +36,16 @@ public class DataPermissionOtherVo extends BaseVo {
     private Long groupId;
 
     /**
-     * 权限模式[例如 rw]
+     * 是否读操作
      */
-    @Schema(description = "权限模式[例如 rw]")
-    private Byte permissionMode;
+    @Schema(description = "是否读操作")
+    private boolean read;
+
+    /**
+     * 是否写操作
+     */
+    @Schema(description = "是否写操作")
+    private boolean write;
 
     /**
      * 状态[ACTIVE:有效, INACTIVE:停用]

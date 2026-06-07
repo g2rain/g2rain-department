@@ -199,7 +199,8 @@
     </select>
 
     <!-- 根据 SelectDto 条件查询列表 -->
-    <select id="selectList" parameterType="com.g2rain.department.dto.DepartmentUserRelationSelectDto" resultMap="BaseResultMap">
+    <select id="selectList" parameterType="com.g2rain.department.dto.DepartmentUserRelationSelectDto"
+            resultMap="BaseResultMap">
         SELECT
         <!-- 主键字段 -->
         id,
@@ -258,9 +259,27 @@
             <if test="userId != null">
                 AND user_id = #{userId, jdbcType=BIGINT}
             </if>
+            <if test="userIds != null and userIds.size() > 0">
+                AND user_id IN
+                <foreach collection="userIds" item="item" open="(" separator="," close=")">
+                    #{item, jdbcType=BIGINT}
+                </foreach>
+            </if>
             <!-- 过滤已删除的记录 -->
             AND (delete_flag = 0 OR delete_flag IS NULL)
         </where>
         <include refid="dynamicOrderBy"/>
+    </select>
+
+    <select id="selectDeptPaths" resultType="java.lang.String">
+        SELECT d.dept_path
+        FROM department_user_relation dur
+        INNER JOIN department d ON d.id = dur.department_id
+        AND d.organ_id = dur.organ_id
+        AND d.status = 'ACTIVE'
+        AND d.delete_flag = 0
+        WHERE dur.organ_id = #{organId, jdbcType=BIGINT}
+        AND dur.user_id = #{userId, jdbcType=BIGINT}
+        AND dur.delete_flag = 0
     </select>
 </mapper>

@@ -12,6 +12,7 @@
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
         <!-- 业务字段（其他自定义字段） -->
         <result column="organ_id" property="organId" jdbcType="BIGINT"/>
+        <result column="meta_name" property="metaName" jdbcType="VARCHAR"/>
         <result column="model_id" property="modelId" jdbcType="BIGINT"/>
         <result column="permission_mode" property="permissionMode" jdbcType="TINYINT"/>
         <result column="status" property="status" jdbcType="VARCHAR"/>
@@ -20,6 +21,13 @@
         <result column="delete_flag" property="deleteFlag" jdbcType="TINYINT"/>
         <!-- version字段（如果存在） -->
         <result column="version" property="version" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <resultMap id="PolicyResultMap" type="com.g2rain.department.dao.po.DataPermissionPolicyPo">
+        <id column="meta_id" property="metaId" jdbcType="BIGINT"/>
+        <result column="group_permission_mode" property="groupPermissionMode" jdbcType="INTEGER"/>
+        <result column="other_permission_mode" property="otherPermissionMode" jdbcType="INTEGER"/>
+        <result column="permission_rule" property="permissionRule" jdbcType="LONGVARCHAR"/>
     </resultMap>
 
     <!-- 定义可复用排序方向片段 -->
@@ -51,6 +59,10 @@
                         organ_id
                         <include refid="directionClause"/>
                     </when>
+                    <when test="item.column == 'metaName'">
+                        meta_name
+                        <include refid="directionClause"/>
+                    </when>
                     <when test="item.column == 'modelId'">
                         model_id
                         <include refid="directionClause"/>
@@ -80,7 +92,7 @@
         <!-- 基础字段 -->
         create_time, update_time,
         <!-- 业务字段 -->
-        organ_id, model_id, permission_mode, status, remark,
+        organ_id, meta_name, model_id, permission_mode, status, remark,
         <!-- deleteFlag字段（如果存在） -->
         delete_flag,
         <!-- version字段（如果存在） -->
@@ -91,7 +103,7 @@
         <!-- 基础字段值 -->
         #{createTime, jdbcType=TIMESTAMP}, #{updateTime, jdbcType=TIMESTAMP},
         <!-- 业务字段值 -->
-        #{organId, jdbcType=BIGINT}, #{modelId, jdbcType=BIGINT}, #{permissionMode, jdbcType=TINYINT}, #{status, jdbcType=VARCHAR}, #{remark, jdbcType=VARCHAR},
+        #{organId, jdbcType=BIGINT}, #{metaName, jdbcType=VARCHAR}, #{modelId, jdbcType=BIGINT}, #{permissionMode, jdbcType=TINYINT}, #{status, jdbcType=VARCHAR}, #{remark, jdbcType=VARCHAR},
         <!-- deleteFlag字段值（如果存在，设置默认值为0） -->
         0,
         <!-- version字段值（如果存在，设置默认值为0） -->
@@ -107,7 +119,7 @@
         <!-- 基础字段 -->
         create_time, update_time,
         <!-- 业务字段 -->
-        organ_id, model_id, permission_mode, status, remark,
+        organ_id, meta_name, model_id, permission_mode, status, remark,
         <!-- deleteFlag字段（如果存在） -->
         delete_flag,
         <!-- version字段（如果存在） -->
@@ -120,7 +132,7 @@
             <!-- 基础字段值 -->
             #{item.createTime, jdbcType=TIMESTAMP}, #{item.updateTime, jdbcType=TIMESTAMP},
             <!-- 业务字段值 -->
-            #{item.organId, jdbcType=BIGINT}, #{item.modelId, jdbcType=BIGINT}, #{item.permissionMode, jdbcType=TINYINT}, #{item.status, jdbcType=VARCHAR}, #{item.remark, jdbcType=VARCHAR},
+            #{item.organId, jdbcType=BIGINT}, #{item.metaName, jdbcType=VARCHAR}, #{item.modelId, jdbcType=BIGINT}, #{item.permissionMode, jdbcType=TINYINT}, #{item.status, jdbcType=VARCHAR}, #{item.remark, jdbcType=VARCHAR},
             <!-- deleteFlag字段值（如果存在，设置默认值为0） -->
             0,
             <!-- version字段值（如果存在，设置默认值为0） -->
@@ -140,6 +152,9 @@
             <!-- 业务字段更新 -->
             <if test="organId != null">
                 organ_id = #{organId, jdbcType=BIGINT},
+            </if>
+            <if test="metaName != null">
+                meta_name = #{metaName, jdbcType=VARCHAR},
             </if>
             <if test="modelId != null">
                 model_id = #{modelId, jdbcType=BIGINT},
@@ -170,6 +185,9 @@
             <!-- 业务字段更新 -->
             <if test="organId != null">
                 organ_id = #{organId, jdbcType=BIGINT},
+            </if>
+            <if test="metaName != null">
+                meta_name = #{metaName, jdbcType=VARCHAR},
             </if>
             <if test="modelId != null">
                 model_id = #{modelId, jdbcType=BIGINT},
@@ -209,7 +227,7 @@
         <!-- 基础字段 -->
         create_time, update_time,
         <!-- 业务字段 -->
-        organ_id, model_id, permission_mode, status, remark,
+        organ_id, meta_name, model_id, permission_mode, status, remark,
         <!-- deleteFlag字段（如果存在） -->
         delete_flag,
         <!-- version字段（如果存在） -->
@@ -228,7 +246,7 @@
         <!-- 基础字段 -->
         create_time, update_time,
         <!-- 业务字段 -->
-        organ_id, model_id, permission_mode, status, remark,
+        organ_id, meta_name, model_id, permission_mode, status, remark,
         <!-- deleteFlag字段（如果存在） -->
         delete_flag,
         <!-- version字段（如果存在） -->
@@ -274,6 +292,9 @@
             <if test="organId != null">
                 AND organ_id = #{organId, jdbcType=BIGINT}
             </if>
+            <if test="metaName != null">
+                AND meta_name = #{metaName, jdbcType=VARCHAR}
+            </if>
             <if test="modelId != null">
                 AND model_id = #{modelId, jdbcType=BIGINT}
             </if>
@@ -290,5 +311,45 @@
             AND (delete_flag = 0 OR delete_flag IS NULL)
         </where>
         <include refid="dynamicOrderBy"/>
+    </select>
+
+    <select id="resolveDataPermissionPolicy" parameterType="com.g2rain.department.dto.DataPermissionPolicyResolveDto" resultMap="PolicyResultMap">
+        SELECT
+            meta.id AS meta_id,
+            meta.permission_mode AS group_permission_mode,
+            CAST(COALESCE(BIT_OR(other_rule.permission_mode), 0) AS SIGNED) AS other_permission_mode,
+            GROUP_CONCAT(DISTINCT CONCAT('(', other_rule.permission_rule, ')') ORDER BY other_rule.id SEPARATOR ' OR ') AS permission_rule
+        FROM data_permission_model model
+        INNER JOIN data_permission_meta meta
+            ON meta.model_id = model.id
+            AND meta.organ_id = #{organId, jdbcType=BIGINT}
+            AND meta.status = 'ACTIVE'
+            AND meta.delete_flag = 0
+        LEFT JOIN (
+            SELECT DISTINCT g.id AS group_id
+            FROM data_permission_group g
+            INNER JOIN data_permission_group_user_relation gur
+                ON gur.group_id = g.id
+                AND gur.organ_id = g.organ_id
+                AND gur.user_id = #{userId, jdbcType=BIGINT}
+                AND gur.status = 'ACTIVE'
+                AND gur.delete_flag = 0
+            WHERE g.organ_id = #{organId, jdbcType=BIGINT}
+                AND g.status = 'ACTIVE'
+                AND g.delete_flag = 0
+                AND g.dept_path IN
+                <foreach collection="deptPathSet" item="deptPath" open="(" separator="," close=")">
+                    #{deptPath, jdbcType=VARCHAR}
+                </foreach>
+        ) matched_group ON 1 = 1
+        LEFT JOIN data_permission_other other_rule
+            ON other_rule.meta_id = meta.id
+            AND other_rule.group_id = matched_group.group_id
+            AND other_rule.status = 'ACTIVE'
+            AND other_rule.delete_flag = 0
+        WHERE model.module_code = #{moduleCode, jdbcType=VARCHAR}
+            AND model.table_name = #{tableName, jdbcType=VARCHAR}
+            AND model.delete_flag = 0
+        GROUP BY meta.id, meta.permission_mode
     </select>
 </mapper>

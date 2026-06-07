@@ -35,12 +35,6 @@ public class DepartmentSelectDto extends BaseSelectListDto {
     private Long organId;
 
     /**
-     * 当前层级编码（固定4位步长）
-     */
-    @Schema(description = "当前层级编码（固定4位步长）")
-    private String deptCode;
-
-    /**
      * 全路径编码，如 00010001
      */
     @Schema(description = "全路径编码，如 00010001")

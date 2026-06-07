@@ -11,7 +11,12 @@ import com.g2rain.department.dao.DataPermissionGroupDao;
 import com.g2rain.department.dao.po.DataPermissionGroupPo;
 import com.g2rain.department.dto.DataPermissionGroupDto;
 import com.g2rain.department.dto.DataPermissionGroupSelectDto;
+import com.g2rain.department.dto.UpdateStatusDto;
+import com.g2rain.department.enums.CommonStatus;
 import com.g2rain.department.service.DataPermissionGroupService;
+import com.g2rain.department.service.support.CommonStatusUpdater;
+import com.g2rain.department.service.support.DataPermissionPolicyCacheBroadcaster;
+import com.g2rain.department.service.support.DataPermissionPolicyChangeDetector;
 import com.g2rain.department.vo.DataPermissionGroupVo;
 import com.g2rain.mybatis.pagination.PageContext;
 import com.g2rain.mybatis.pagination.model.Page;
@@ -35,6 +40,9 @@ public class DataPermissionGroupServiceImpl implements DataPermissionGroupServic
 
     @Resource(name = "dataPermissionGroupDao")
     private DataPermissionGroupDao dataPermissionGroupDao;
+
+    @Resource
+    private DataPermissionPolicyCacheBroadcaster policyCacheBroadcaster;
 
     private IdGenerator idGenerator;
 
@@ -66,24 +74,25 @@ public class DataPermissionGroupServiceImpl implements DataPermissionGroupServic
 
     @Override
     public Long save(DataPermissionGroupDto dto) {
-        // 转换 DTO 为 PO
         DataPermissionGroupPo entity = DataPermissionGroupConverter.INSTANCE.dto2po(dto);
 
-        // 判断是新增还是更新
         Long id = entity.getId();
+        DataPermissionGroupPo before = Objects.nonNull(id) && id > 0 ? dataPermissionGroupDao.selectById(id) : null;
         if (Objects.isNull(id) || id == 0) {
-            // 新增：使用IdGenerator生成主键
             entity.setId(idGenerator.generateId());
             LocalDateTime now = Moments.now();
             entity.setUpdateTime(now);
             entity.setCreateTime(now);
+            entity.setStatus(CommonStatus.ACTIVE.name());
             int success = dataPermissionGroupDao.insert(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.CREATE_DATA_ERROR);
         } else {
-            // 更新：直接更新
             entity.setUpdateTime(Moments.now());
             int success = dataPermissionGroupDao.update(entity);
             Asserts.greaterThan(success, 0, SystemErrorCode.UPDATE_DATA_ERROR, id);
+            if (DataPermissionPolicyChangeDetector.groupAffecting(before, entity)) {
+                policyCacheBroadcaster.broadcastByGroupId(entity.getOrganId(), entity.getId());
+            }
         }
 
         return entity.getId();
@@ -91,6 +100,36 @@ public class DataPermissionGroupServiceImpl implements DataPermissionGroupServic
 
     @Override
     public int delete(Long id) {
-        return dataPermissionGroupDao.delete(id);
+        DataPermissionGroupPo group = dataPermissionGroupDao.selectById(id);
+        int deleted = dataPermissionGroupDao.delete(id);
+        if (deleted > 0 && Objects.nonNull(group)) {
+            policyCacheBroadcaster.broadcastByGroupId(group.getOrganId(), group.getId());
+        }
+        return deleted;
+    }
+
+    @Override
+    public int updateStatus(Long id, UpdateStatusDto dto) {
+        DataPermissionGroupPo before = dataPermissionGroupDao.selectById(id);
+        int updated = CommonStatusUpdater.update(
+            id,
+            dto,
+            () -> {
+                DataPermissionGroupPo entity = dataPermissionGroupDao.selectById(id);
+                return entity == null ? null : entity.getStatus();
+            },
+            () -> {
+                DataPermissionGroupPo entity = new DataPermissionGroupPo();
+                entity.setId(id);
+                entity.setStatus(dto.getStatus());
+                entity.setUpdateTime(Moments.now());
+                return dataPermissionGroupDao.update(entity);
+            },
+            "dataPermissionGroup"
+        );
+        if (updated > 0 && Objects.nonNull(before) && !Objects.equals(before.getStatus(), dto.getStatus())) {
+            policyCacheBroadcaster.broadcastByGroupId(before.getOrganId(), id);
+        }
+        return updated;
     }
 }

@@ -5,6 +5,8 @@ import com.g2rain.department.vo.DataPermissionMetaVo;
 import com.g2rain.common.model.PageData;
 import com.g2rain.common.model.PageSelectListDto;
 import com.g2rain.common.model.Result;
+import com.g2rain.department.dto.DataPermissionPolicyResolveDto;
+import com.g2rain.department.vo.DataPermissionPolicyVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,4 +42,14 @@ public interface DataPermissionMetaApi {
     @GetMapping("/page")
     @Operation(summary = "分页查询数据权限元数据表列表", description = "分页查询数据权限元数据表列表")
     Result<PageData<DataPermissionMetaVo>> selectPage(PageSelectListDto<DataPermissionMetaSelectDto> selectDto);
+
+    /**
+     * 解析数据权限策略。
+     *
+     * @param resolveDto 解析查询参数
+     * @return 数据权限策略
+     */
+    @GetMapping("/policy_resolve")
+    @Operation(summary = "解析数据权限策略", hidden = true, description = "根据用户、部门路径和业务模型解析数据权限策略")
+    Result<DataPermissionPolicyVo> resolveDataPermissionPolicy(DataPermissionPolicyResolveDto resolveDto);
 }
