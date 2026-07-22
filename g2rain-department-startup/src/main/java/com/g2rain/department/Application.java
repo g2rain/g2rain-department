@@ -3,6 +3,7 @@ package com.g2rain.department;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 /**
  * <p>{@code Application} 是 Spring Boot 启动类，用于启动整个应用程序。</p>
@@ -31,6 +32,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * }</pre>
  */
 @SpringBootApplication
+@EnableDiscoveryClient
 public class Application {
 
     /**
