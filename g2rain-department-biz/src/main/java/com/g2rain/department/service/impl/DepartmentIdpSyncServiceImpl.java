@@ -6,6 +6,7 @@ import com.g2rain.common.utils.Asserts;
 import com.g2rain.common.utils.Collections;
 import com.g2rain.common.utils.Moments;
 import com.g2rain.common.utils.Strings;
+import com.g2rain.common.web.PrincipalContextHolder;
 import com.g2rain.department.dao.DepartmentDao;
 import com.g2rain.department.dao.DepartmentIdpMappingDao;
 import com.g2rain.department.dao.DepartmentUserRelationDao;
@@ -20,6 +21,7 @@ import com.g2rain.department.dto.DepartmentIdpSyncMemberDepartment;
 import com.g2rain.department.dto.DepartmentUserRelationSelectDto;
 import com.g2rain.department.dto.UpdateStatusDto;
 import com.g2rain.department.enums.CommonStatus;
+import com.g2rain.department.enums.DepartmentErrorCode;
 import com.g2rain.department.enums.IdpSyncMode;
 import com.g2rain.department.service.DepartmentIdpSyncService;
 import com.g2rain.department.service.DepartmentService;
@@ -79,6 +81,7 @@ public class DepartmentIdpSyncServiceImpl implements DepartmentIdpSyncService {
     @Override
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public DepartmentIdpSyncResultVo sync(DepartmentIdpSyncDto dto) {
+        validateSyncPermission(dto.getOrganId());
         DepartmentIdpSyncResultVo result = new DepartmentIdpSyncResultVo();
         IdpSyncMode syncMode = IdpSyncMode.normalize(dto.getSyncMode());
         Map<String, Long> idpDeptToPlatform = loadExistingMappings(dto.getOrganId(), dto.getIdpType());
@@ -94,7 +97,7 @@ public class DepartmentIdpSyncServiceImpl implements DepartmentIdpSyncService {
             }
         }
 
-        if (syncMode == IdpSyncMode.FULL) {
+        if (syncMode == IdpSyncMode.FULL && Boolean.TRUE.equals(dto.getEnableDestructiveReconcile())) {
             reconcileOffboardedDepartments(idpDeptToPlatform, snapshotIdpDeptIds, result);
         }
 
@@ -217,6 +220,18 @@ public class DepartmentIdpSyncServiceImpl implements DepartmentIdpSyncService {
         syncMemberDepartmentsIncremental(dto, idpDeptToPlatform, result);
     }
 
+    @Override
+    public List<String> listMappedIdpDeptIds(Long organId, String idpType) {
+        validateSyncPermission(organId);
+        return departmentIdpMappingDao.selectByOrganAndIdpType(organId, idpType)
+            .stream()
+            .map(DepartmentIdpMappingPo::getIdpDeptId)
+            .filter(Strings::isNotBlank)
+            .map(String::trim)
+            .distinct()
+            .toList();
+    }
+
     private void syncMemberDepartmentsIncremental(
         DepartmentIdpSyncDto dto,
         Map<String, Long> idpDeptToPlatform,
@@ -225,7 +240,7 @@ public class DepartmentIdpSyncServiceImpl implements DepartmentIdpSyncService {
         if (Collections.isEmpty(dto.getMemberDepartments())) {
             return;
         }
-        Map<Long, Set<Long>> departmentUsers = aggregateDepartmentUsers(dto, idpDeptToPlatform, false);
+        Map<Long, Set<Long>> departmentUsers = aggregateDepartmentUsers(dto, idpDeptToPlatform);
         assignUsersByDepartment(dto.getOrganId(), departmentUsers, result);
     }
 
@@ -239,7 +254,9 @@ public class DepartmentIdpSyncServiceImpl implements DepartmentIdpSyncService {
             return;
         }
         Map<Long, Set<Long>> desiredByUser = buildDesiredUserDepartments(dto, idpDeptToPlatform);
-        removeStaleRelations(dto.getOrganId(), mappedDepartmentIds, desiredByUser, result);
+        if (Boolean.TRUE.equals(dto.getEnableDestructiveReconcile())) {
+            removeStaleRelations(dto.getOrganId(), mappedDepartmentIds, desiredByUser, result);
+        }
         assignUsersByDepartment(dto.getOrganId(), desiredByUser, result);
     }
 
@@ -310,8 +327,7 @@ public class DepartmentIdpSyncServiceImpl implements DepartmentIdpSyncService {
 
     private static Map<Long, Set<Long>> aggregateDepartmentUsers(
         DepartmentIdpSyncDto dto,
-        Map<String, Long> idpDeptToPlatform,
-        boolean includeEmptyDeptMembers
+        Map<String, Long> idpDeptToPlatform
     ) {
         Map<Long, Set<Long>> departmentUsers = new LinkedHashMap<>();
         if (Collections.isEmpty(dto.getMemberDepartments())) {
@@ -321,7 +337,7 @@ public class DepartmentIdpSyncServiceImpl implements DepartmentIdpSyncService {
             if (member.getUserId() == null) {
                 continue;
             }
-            if (!includeEmptyDeptMembers && Collections.isEmpty(member.getIdpDeptIds())) {
+            if (Collections.isEmpty(member.getIdpDeptIds())) {
                 continue;
             }
             for (String idpDeptId : member.getIdpDeptIds()) {
@@ -404,5 +420,19 @@ public class DepartmentIdpSyncServiceImpl implements DepartmentIdpSyncService {
         int depth = depthOf(node.getParentIdpDeptId(), nodeById, depthCache) + 1;
         depthCache.put(idpDeptId, depth);
         return depth;
+    }
+
+    static void assertSyncAuthorized(boolean adminUser, Long principalOrganId, Long requestedOrganId) {
+        Asserts.isTrue(adminUser, DepartmentErrorCode.DEPARTMENT_IDP_SYNC_FORBIDDEN);
+        Asserts.isTrue(Objects.equals(principalOrganId, requestedOrganId),
+            SystemErrorCode.PARAM_VAL_INVALID, "organId");
+    }
+
+    private void validateSyncPermission(Long organId) {
+        assertSyncAuthorized(
+            PrincipalContextHolder.isAdminUser(),
+            PrincipalContextHolder.getOrganId(),
+            organId
+        );
     }
 }

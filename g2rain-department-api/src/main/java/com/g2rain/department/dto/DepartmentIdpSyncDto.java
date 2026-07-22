@@ -39,4 +39,7 @@ public class DepartmentIdpSyncDto {
     @Valid
     @Schema(description = "成员部门关联列表")
     private List<DepartmentIdpSyncMemberDepartment> memberDepartments = new ArrayList<>();
+
+    @Schema(description = "是否允许 FULL 对账删除（停用部门、清理关系）；默认 true")
+    private Boolean enableDestructiveReconcile = true;
 }

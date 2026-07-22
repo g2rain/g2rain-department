@@ -1,5 +1,9 @@
 package com.g2rain.department.service.impl;
 
+import com.g2rain.common.exception.BusinessException;
+import com.g2rain.common.exception.SystemErrorCode;
+import com.g2rain.department.enums.DepartmentErrorCode;
+import com.g2rain.department.enums.IdpSyncMode;
 import com.g2rain.department.dto.DepartmentIdpSyncDepartmentNode;
 import com.g2rain.department.dto.DepartmentIdpSyncDto;
 import com.g2rain.department.dto.DepartmentIdpSyncMemberDepartment;
@@ -11,6 +15,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DepartmentIdpSyncServiceImplTest {
@@ -68,6 +74,48 @@ class DepartmentIdpSyncServiceImplTest {
 
         assertTrue(desired.containsKey(100L));
         assertTrue(desired.get(100L).isEmpty());
+    }
+
+    @Test
+    void assertSyncAuthorized_shouldPassWhenAdminAndOrganMatches() {
+        DepartmentIdpSyncServiceImpl.assertSyncAuthorized(true, 100L, 100L);
+    }
+
+    @Test
+    void assertSyncAuthorized_shouldRejectNonAdmin() {
+        BusinessException exception = assertThrows(
+            BusinessException.class,
+            () -> DepartmentIdpSyncServiceImpl.assertSyncAuthorized(false, 100L, 100L)
+        );
+        assertEquals(DepartmentErrorCode.DEPARTMENT_IDP_SYNC_FORBIDDEN.code(), exception.getErrorCode());
+    }
+
+    @Test
+    void assertSyncAuthorized_shouldRejectOrganMismatch() {
+        BusinessException exception = assertThrows(
+            BusinessException.class,
+            () -> DepartmentIdpSyncServiceImpl.assertSyncAuthorized(true, 100L, 200L)
+        );
+        assertEquals(SystemErrorCode.PARAM_VAL_INVALID.code(), exception.getErrorCode());
+    }
+
+    @Test
+    void fullDestructiveReconcile_shouldRequireExplicitFlag() {
+        DepartmentIdpSyncDto disabled = new DepartmentIdpSyncDto();
+        disabled.setSyncMode(IdpSyncMode.FULL.name());
+        disabled.setEnableDestructiveReconcile(false);
+
+        DepartmentIdpSyncDto enabled = new DepartmentIdpSyncDto();
+        enabled.setSyncMode(IdpSyncMode.FULL.name());
+        enabled.setEnableDestructiveReconcile(true);
+
+        assertFalse(shouldRunDestructiveReconcile(disabled));
+        assertTrue(shouldRunDestructiveReconcile(enabled));
+    }
+
+    private static boolean shouldRunDestructiveReconcile(DepartmentIdpSyncDto dto) {
+        return IdpSyncMode.FULL == IdpSyncMode.normalize(dto.getSyncMode())
+            && Boolean.TRUE.equals(dto.getEnableDestructiveReconcile());
     }
 
     @Test

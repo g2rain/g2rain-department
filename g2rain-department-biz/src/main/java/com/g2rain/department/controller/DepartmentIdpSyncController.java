@@ -9,7 +9,10 @@ import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * 部门 IdP 同步控制器。
@@ -24,5 +27,13 @@ public class DepartmentIdpSyncController implements DepartmentIdpSyncApi {
     @Override
     public Result<DepartmentIdpSyncResultVo> sync(@RequestBody @Validated DepartmentIdpSyncDto dto) {
         return Result.success(departmentIdpSyncService.sync(dto));
+    }
+
+    @Override
+    public Result<List<String>> listMappedIdpDeptIds(
+        @RequestParam("organId") Long organId,
+        @RequestParam("idpType") String idpType
+    ) {
+        return Result.success(departmentIdpSyncService.listMappedIdpDeptIds(organId, idpType));
     }
 }
