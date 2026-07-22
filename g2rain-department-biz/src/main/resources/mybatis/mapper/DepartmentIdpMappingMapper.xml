@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.g2rain.department.dao.DepartmentIdpMappingDao">
+    <resultMap id="BaseResultMap" type="com.g2rain.department.dao.po.DepartmentIdpMappingPo">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="organ_id" property="organId" jdbcType="BIGINT"/>
+        <result column="idp_type" property="idpType" jdbcType="VARCHAR"/>
+        <result column="idp_dept_id" property="idpDeptId" jdbcType="VARCHAR"/>
+        <result column="department_id" property="departmentId" jdbcType="BIGINT"/>
+        <result column="delete_flag" property="deleteFlag" jdbcType="TINYINT"/>
+        <result column="version" property="version" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, create_time, update_time, organ_id, idp_type, idp_dept_id, department_id, delete_flag, version
+    </sql>
+
+    <insert id="insert" parameterType="com.g2rain.department.dao.po.DepartmentIdpMappingPo">
+        INSERT INTO department_idp_mapping (
+            id, create_time, update_time, organ_id, idp_type, idp_dept_id, department_id, delete_flag, version
+        ) VALUES (
+            #{id}, #{createTime}, #{updateTime}, #{organId}, #{idpType}, #{idpDeptId}, #{departmentId}, 0, 0
+        )
+    </insert>
+
+    <select id="selectByOrganAndIdpDept" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM department_idp_mapping
+        WHERE organ_id = #{organId}
+          AND idp_type = #{idpType}
+          AND idp_dept_id = #{idpDeptId}
+          AND delete_flag = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectByOrganAndIdpType" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM department_idp_mapping
+        WHERE organ_id = #{organId}
+          AND idp_type = #{idpType}
+          AND delete_flag = 0
+    </select>
+</mapper>

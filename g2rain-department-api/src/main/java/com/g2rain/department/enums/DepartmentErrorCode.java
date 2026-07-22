@@ -16,7 +16,10 @@ public enum DepartmentErrorCode implements ErrorCode {
     DATA_PERMISSION_META_MODEL_DUPLICATE("department.40002", "同一机构下该权限模型已存在"),
 
     @Schema(description = "同一权限小组下权限策略已存在")
-    DATA_PERMISSION_OTHER_META_DUPLICATE("department.40003", "同一权限小组下该权限策略已存在");
+    DATA_PERMISSION_OTHER_META_DUPLICATE("department.40003", "同一权限小组下该权限策略已存在"),
+
+    @Schema(description = "无权执行部门 IdP 同步")
+    DEPARTMENT_IDP_SYNC_FORBIDDEN("department.40004", "无权执行部门 IdP 同步");
 
     private final String code;
     private final String messageTemplate;
