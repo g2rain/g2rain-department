@@ -41,6 +41,12 @@ public class DataPermissionModelVo extends BaseVo {
     @Schema(description = "业务表名（建议小写）")
     private String tableName;
 
+    @Schema(description = "是否启用 USER 维度")
+    private Boolean enableUserScope;
+
+    @Schema(description = "是否启用 DEPT 维度")
+    private Boolean enableDeptScope;
+
     /**
      * 备注说明（如：订单主表权限模型）
      */

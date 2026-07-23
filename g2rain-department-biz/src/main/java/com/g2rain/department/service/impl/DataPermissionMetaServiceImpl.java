@@ -8,35 +8,57 @@ import com.g2rain.common.utils.Asserts;
 import com.g2rain.common.utils.Collections;
 import com.g2rain.common.utils.Moments;
 import com.g2rain.common.utils.Strings;
+import com.g2rain.common.web.PrincipalContextHolder;
 import com.g2rain.department.converter.DataPermissionMetaConverter;
 import com.g2rain.department.converter.DataPermissionPolicyConverter;
+import com.g2rain.department.dao.DataPermissionFieldDao;
+import com.g2rain.department.dao.DepartmentUserRelationDao;
 import com.g2rain.department.dao.po.DataPermissionPolicyPo;
 import com.g2rain.department.dao.DataPermissionMetaDao;
 import com.g2rain.department.dao.DataPermissionModelDao;
+import com.g2rain.department.dao.po.DataPermissionFieldPo;
 import com.g2rain.department.dao.po.DataPermissionMetaPo;
 import com.g2rain.department.dao.po.DataPermissionModelPo;
+import com.g2rain.department.dto.DataPermissionFieldSelectDto;
 import com.g2rain.department.dto.DataPermissionMetaDto;
 import com.g2rain.department.dto.DataPermissionMetaSelectDto;
+import com.g2rain.department.dto.DataPermissionModelSelectDto;
 import com.g2rain.department.dto.DataPermissionPolicyResolveDto;
+import com.g2rain.department.dto.DataPermissionSqlValidateDto;
+import com.g2rain.department.dto.DataPermissionWhereFragmentResolveDto;
 import com.g2rain.department.dto.UpdateStatusDto;
 import com.g2rain.department.enums.CommonStatus;
 import com.g2rain.department.enums.DepartmentErrorCode;
 import com.g2rain.department.service.DataPermissionMetaService;
 import com.g2rain.department.service.support.CommonStatusUpdater;
+import com.g2rain.department.service.support.DataPermissionIsolationContext;
+import com.g2rain.department.service.support.DataPermissionIsolationMetaAdapter;
 import com.g2rain.department.service.support.DataPermissionPolicyCacheBroadcaster;
 import com.g2rain.department.service.support.DataPermissionPolicyChangeDetector;
+import com.g2rain.department.service.support.DataPermissionPolicyResolveResultConverter;
+import com.g2rain.department.service.support.DataPermissionSqlIsolationValidator;
+import com.g2rain.department.service.support.DataPermissionWhereFragmentSupport;
 import com.g2rain.department.vo.DataPermissionMetaVo;
 import com.g2rain.department.vo.DataPermissionPolicyVo;
+import com.g2rain.department.vo.DataPermissionSqlValidateVo;
+import com.g2rain.department.vo.DataPermissionWhereFragmentVo;
+import com.g2rain.data.isolation.model.DataPermissionPolicyResolveResult;
 import com.g2rain.mybatis.pagination.PageContext;
 import com.g2rain.mybatis.pagination.model.Page;
 import jakarta.annotation.Resource;
+import net.sf.jsqlparser.schema.Table;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -55,6 +77,12 @@ public class DataPermissionMetaServiceImpl implements DataPermissionMetaService 
 
     @Resource(name = "dataPermissionModelDao")
     private DataPermissionModelDao dataPermissionModelDao;
+
+    @Resource(name = "dataPermissionFieldDao")
+    private DataPermissionFieldDao dataPermissionFieldDao;
+
+    @Resource(name = "departmentUserRelationDao")
+    private DepartmentUserRelationDao departmentUserRelationDao;
 
     @Resource
     private DataPermissionPolicyCacheBroadcaster policyCacheBroadcaster;
@@ -107,6 +135,151 @@ public class DataPermissionMetaServiceImpl implements DataPermissionMetaService 
         }
 
         return DataPermissionPolicyConverter.INSTANCE.po2vo(policyPo);
+    }
+
+    @Override
+    public List<DataPermissionWhereFragmentVo> resolveWhereFragments(DataPermissionWhereFragmentResolveDto resolveDto) {
+        IdentityContext identity = requireIdentity();
+        DataPermissionMetaSelectDto selectDto = new DataPermissionMetaSelectDto();
+        selectDto.setOrganId(identity.organId());
+        selectDto.setStatus(CommonStatus.ACTIVE.name());
+
+        String filterModuleCode = Objects.isNull(resolveDto) ? null : resolveDto.getModuleCode();
+        String filterTableName = Objects.isNull(resolveDto) ? null : normalizeTableName(resolveDto.getTableName());
+        Map<String, DataPermissionWhereFragmentVo> fragments = new LinkedHashMap<>();
+
+        for (DataPermissionMetaPo metaPo : dataPermissionMetaDao.selectList(selectDto)) {
+            DataPermissionModelPo modelPo = dataPermissionModelDao.selectById(metaPo.getModelId());
+            if (Objects.isNull(modelPo)) {
+                continue;
+            }
+            String moduleCode = modelPo.getModuleCode();
+            if (StringUtils.hasText(filterModuleCode) && !filterModuleCode.equals(moduleCode)) {
+                continue;
+            }
+            String tableName = normalizeTableName(modelPo.getTableName());
+            if (StringUtils.hasText(filterTableName) && !filterTableName.equals(tableName)) {
+                continue;
+            }
+            String fragmentKey = moduleCode + "|" + tableName;
+            if (fragments.containsKey(fragmentKey)) {
+                continue;
+            }
+
+            DataPermissionIsolationContext context = resolveIsolationContext(
+                moduleCode, tableName, identity
+            );
+            if (Objects.isNull(context) || Objects.isNull(context.getPolicy())) {
+                continue;
+            }
+
+            Table table = new Table(tableName);
+            DataPermissionPolicyResolveResult policy = context.getPolicy();
+            String whereFragment = DataPermissionWhereFragmentSupport.buildReadConditionFragment(
+                table, context.getIsolationMeta(), policy, context.getDeptPathsCsv()
+            );
+            if (!StringUtils.hasText(whereFragment)) {
+                continue;
+            }
+
+            DataPermissionWhereFragmentVo vo = new DataPermissionWhereFragmentVo();
+            vo.setModuleCode(moduleCode);
+            vo.setTableName(tableName);
+            vo.setWhereFragment(whereFragment);
+            fragments.put(fragmentKey, vo);
+        }
+        return new ArrayList<>(fragments.values());
+    }
+
+    @Override
+    public DataPermissionSqlValidateVo validateSql(DataPermissionSqlValidateDto validateDto) {
+        Asserts.isTrue(Strings.isNotBlank(validateDto.getModuleCode()), SystemErrorCode.PARAM_REQUIRED, "moduleCode");
+        Asserts.isTrue(Strings.isNotBlank(validateDto.getSql()), SystemErrorCode.PARAM_REQUIRED, "sql");
+
+        IdentityContext identity = requireIdentity();
+        return DataPermissionSqlIsolationValidator.validate(
+            validateDto.getSql(),
+            validateDto.getModuleCode(),
+            identity.organId(),
+            identity.deptPathsCsv(),
+            tableName -> resolveIsolationContext(validateDto.getModuleCode(), tableName, identity)
+        );
+    }
+
+    private DataPermissionIsolationContext resolveIsolationContext(
+        String moduleCode,
+        String tableName,
+        IdentityContext identity
+    ) {
+        if (!StringUtils.hasText(moduleCode) || !StringUtils.hasText(tableName)) {
+            return null;
+        }
+
+        DataPermissionModelSelectDto modelSelectDto = new DataPermissionModelSelectDto();
+        modelSelectDto.setModuleCode(moduleCode);
+        modelSelectDto.setTableName(normalizeTableName(tableName));
+        List<DataPermissionModelPo> models = dataPermissionModelDao.selectList(modelSelectDto);
+        if (models.isEmpty()) {
+            return null;
+        }
+
+        DataPermissionModelPo modelPo = models.getFirst();
+        DataPermissionMetaSelectDto metaSelectDto = new DataPermissionMetaSelectDto();
+        metaSelectDto.setOrganId(identity.organId());
+        metaSelectDto.setModelId(modelPo.getId());
+        metaSelectDto.setStatus(CommonStatus.ACTIVE.name());
+        List<DataPermissionMetaPo> metas = dataPermissionMetaDao.selectList(metaSelectDto);
+        if (metas.isEmpty()) {
+            return null;
+        }
+
+        DataPermissionFieldSelectDto fieldSelectDto = new DataPermissionFieldSelectDto();
+        fieldSelectDto.setModelId(modelPo.getId());
+        List<DataPermissionFieldPo> fields = dataPermissionFieldDao.selectList(fieldSelectDto);
+
+        DataPermissionPolicyResolveDto policyResolveDto = new DataPermissionPolicyResolveDto();
+        policyResolveDto.setOrganId(identity.organId());
+        policyResolveDto.setUserId(identity.userId());
+        policyResolveDto.setDeptPaths(identity.deptPathsCsv());
+        policyResolveDto.setModuleCode(moduleCode);
+        policyResolveDto.setTableName(normalizeTableName(tableName));
+        DataPermissionPolicyVo policyVo = resolveDataPermissionPolicy(policyResolveDto);
+
+        DataPermissionIsolationContext context = new DataPermissionIsolationContext();
+        context.setOrganId(identity.organId());
+        context.setUserId(identity.userId());
+        context.setDeptPathsCsv(identity.deptPathsCsv());
+        context.setMetaPo(metas.getFirst());
+        context.setModelPo(modelPo);
+        context.setFields(fields);
+        context.setIsolationMeta(DataPermissionIsolationMetaAdapter.toMeta(modelPo, fields));
+        context.setPolicy(DataPermissionPolicyResolveResultConverter.fromVo(policyVo));
+        return context;
+    }
+
+    private IdentityContext requireIdentity() {
+        Long organId = PrincipalContextHolder.getOrganId();
+        Long userId = PrincipalContextHolder.getUserId();
+        Asserts.isTrue(Objects.nonNull(organId) && Objects.nonNull(userId),
+            DepartmentErrorCode.DATA_PERMISSION_IDENTITY_REQUIRED);
+
+        List<String> deptPaths = departmentUserRelationDao.selectDeptPaths(organId, userId);
+        String deptPathsCsv = deptPaths.stream()
+            .filter(Strings::isNotBlank)
+            .map(String::trim)
+            .collect(Collectors.joining(","));
+        Asserts.isTrue(Strings.isNotBlank(deptPathsCsv), SystemErrorCode.PARAM_REQUIRED, "deptPaths");
+        return new IdentityContext(organId, userId, deptPathsCsv);
+    }
+
+    private static String normalizeTableName(String tableName) {
+        if (!StringUtils.hasText(tableName)) {
+            return tableName;
+        }
+        return tableName.trim().replace("`", "").toLowerCase(Locale.ROOT);
+    }
+
+    private record IdentityContext(Long organId, Long userId, String deptPathsCsv) {
     }
 
     @Override

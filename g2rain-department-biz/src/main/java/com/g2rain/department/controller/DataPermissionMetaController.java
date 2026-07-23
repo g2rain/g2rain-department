@@ -4,6 +4,8 @@ import com.g2rain.department.api.DataPermissionMetaApi;
 import com.g2rain.department.dto.DataPermissionMetaDto;
 import com.g2rain.department.dto.DataPermissionMetaSelectDto;
 import com.g2rain.department.dto.DataPermissionPolicyResolveDto;
+import com.g2rain.department.dto.DataPermissionSqlValidateDto;
+import com.g2rain.department.dto.DataPermissionWhereFragmentResolveDto;
 import com.g2rain.department.dto.UpdateStatusDto;
 import com.g2rain.department.service.DataPermissionMetaService;
 import com.g2rain.common.model.PageData;
@@ -11,6 +13,8 @@ import com.g2rain.common.model.PageSelectListDto;
 import com.g2rain.common.model.Result;
 import com.g2rain.department.vo.DataPermissionMetaVo;
 import com.g2rain.department.vo.DataPermissionPolicyVo;
+import com.g2rain.department.vo.DataPermissionSqlValidateVo;
+import com.g2rain.department.vo.DataPermissionWhereFragmentVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.annotation.Resource;
@@ -50,6 +54,16 @@ public class DataPermissionMetaController implements DataPermissionMetaApi {
     @Override
     public Result<DataPermissionPolicyVo> resolveDataPermissionPolicy(DataPermissionPolicyResolveDto resolveDto) {
         return Result.success(dataPermissionMetaService.resolveDataPermissionPolicy(resolveDto));
+    }
+
+    @Override
+    public Result<List<DataPermissionWhereFragmentVo>> resolveWhereFragments(DataPermissionWhereFragmentResolveDto resolveDto) {
+        return Result.success(dataPermissionMetaService.resolveWhereFragments(resolveDto));
+    }
+
+    @Override
+    public Result<DataPermissionSqlValidateVo> validateSql(@Validated @RequestBody DataPermissionSqlValidateDto validateDto) {
+        return Result.success(dataPermissionMetaService.validateSql(validateDto));
     }
 
     @PostMapping("/save")

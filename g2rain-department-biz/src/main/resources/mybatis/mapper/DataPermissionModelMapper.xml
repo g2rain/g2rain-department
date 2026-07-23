@@ -14,6 +14,8 @@
         <result column="model_name" property="modelName" jdbcType="VARCHAR"/>
         <result column="module_code" property="moduleCode" jdbcType="VARCHAR"/>
         <result column="table_name" property="tableName" jdbcType="VARCHAR"/>
+        <result column="enable_user_scope" property="enableUserScope" jdbcType="TINYINT"/>
+        <result column="enable_dept_scope" property="enableDeptScope" jdbcType="TINYINT"/>
         <result column="remark" property="remark" jdbcType="VARCHAR"/>
         <!-- deleteFlag字段（如果存在） -->
         <result column="delete_flag" property="deleteFlag" jdbcType="TINYINT"/>
@@ -75,7 +77,7 @@
         <!-- 基础字段 -->
         create_time, update_time,
         <!-- 业务字段 -->
-        model_name, module_code, table_name, remark,
+        model_name, module_code, table_name, enable_user_scope, enable_dept_scope, remark,
         <!-- deleteFlag字段（如果存在） -->
         delete_flag,
         <!-- version字段（如果存在） -->
@@ -86,7 +88,9 @@
         <!-- 基础字段值 -->
         #{createTime, jdbcType=TIMESTAMP}, #{updateTime, jdbcType=TIMESTAMP},
         <!-- 业务字段值 -->
-        #{modelName, jdbcType=VARCHAR}, #{moduleCode, jdbcType=VARCHAR}, #{tableName, jdbcType=VARCHAR}, #{remark, jdbcType=VARCHAR},
+        #{modelName, jdbcType=VARCHAR}, #{moduleCode, jdbcType=VARCHAR}, #{tableName, jdbcType=VARCHAR},
+        COALESCE(#{enableUserScope, jdbcType=TINYINT}, 1), COALESCE(#{enableDeptScope, jdbcType=TINYINT}, 1),
+        #{remark, jdbcType=VARCHAR},
         <!-- deleteFlag字段值（如果存在，设置默认值为0） -->
         0,
         <!-- version字段值（如果存在，设置默认值为0） -->
@@ -102,7 +106,7 @@
         <!-- 基础字段 -->
         create_time, update_time,
         <!-- 业务字段 -->
-        model_name, module_code, table_name, remark,
+        model_name, module_code, table_name, enable_user_scope, enable_dept_scope, remark,
         <!-- deleteFlag字段（如果存在） -->
         delete_flag,
         <!-- version字段（如果存在） -->
@@ -115,7 +119,9 @@
             <!-- 基础字段值 -->
             #{item.createTime, jdbcType=TIMESTAMP}, #{item.updateTime, jdbcType=TIMESTAMP},
             <!-- 业务字段值 -->
-            #{item.modelName, jdbcType=VARCHAR}, #{item.moduleCode, jdbcType=VARCHAR}, #{item.tableName, jdbcType=VARCHAR}, #{item.remark, jdbcType=VARCHAR},
+            #{item.modelName, jdbcType=VARCHAR}, #{item.moduleCode, jdbcType=VARCHAR}, #{item.tableName, jdbcType=VARCHAR},
+            COALESCE(#{item.enableUserScope, jdbcType=TINYINT}, 1), COALESCE(#{item.enableDeptScope, jdbcType=TINYINT}, 1),
+            #{item.remark, jdbcType=VARCHAR},
             <!-- deleteFlag字段值（如果存在，设置默认值为0） -->
             0,
             <!-- version字段值（如果存在，设置默认值为0） -->
@@ -141,6 +147,12 @@
             </if>
             <if test="tableName != null">
                 table_name = #{tableName, jdbcType=VARCHAR},
+            </if>
+            <if test="enableUserScope != null">
+                enable_user_scope = #{enableUserScope, jdbcType=TINYINT},
+            </if>
+            <if test="enableDeptScope != null">
+                enable_dept_scope = #{enableDeptScope, jdbcType=TINYINT},
             </if>
             <if test="remark != null">
                 remark = #{remark, jdbcType=VARCHAR},
@@ -168,6 +180,12 @@
             </if>
             <if test="tableName != null">
                 table_name = #{tableName, jdbcType=VARCHAR},
+            </if>
+            <if test="enableUserScope != null">
+                enable_user_scope = #{enableUserScope, jdbcType=TINYINT},
+            </if>
+            <if test="enableDeptScope != null">
+                enable_dept_scope = #{enableDeptScope, jdbcType=TINYINT},
             </if>
             <if test="remark != null">
                 remark = #{remark, jdbcType=VARCHAR},
@@ -198,7 +216,7 @@
         <!-- 基础字段 -->
         create_time, update_time,
         <!-- 业务字段 -->
-        model_name, module_code, table_name, remark,
+        model_name, module_code, table_name, enable_user_scope, enable_dept_scope, remark,
         <!-- deleteFlag字段（如果存在） -->
         delete_flag,
         <!-- version字段（如果存在） -->
@@ -217,7 +235,7 @@
         <!-- 基础字段 -->
         create_time, update_time,
         <!-- 业务字段 -->
-        model_name, module_code, table_name, remark,
+        model_name, module_code, table_name, enable_user_scope, enable_dept_scope, remark,
         <!-- deleteFlag字段（如果存在） -->
         delete_flag,
         <!-- version字段（如果存在） -->

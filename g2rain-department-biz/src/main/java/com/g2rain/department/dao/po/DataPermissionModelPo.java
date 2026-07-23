@@ -36,6 +36,16 @@ public class DataPermissionModelPo extends BasePo {
     private String tableName;
 
     /**
+     * 是否启用 USER 维度
+     */
+    private Boolean enableUserScope;
+
+    /**
+     * 是否启用 DEPT 维度
+     */
+    private Boolean enableDeptScope;
+
+    /**
      * 备注说明（如：订单主表权限模型）
      */
     private String remark;

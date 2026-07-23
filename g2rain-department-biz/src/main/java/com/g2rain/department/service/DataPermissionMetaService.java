@@ -5,9 +5,13 @@ import com.g2rain.common.model.PageSelectListDto;
 import com.g2rain.department.dto.DataPermissionMetaDto;
 import com.g2rain.department.dto.DataPermissionMetaSelectDto;
 import com.g2rain.department.dto.DataPermissionPolicyResolveDto;
+import com.g2rain.department.dto.DataPermissionSqlValidateDto;
+import com.g2rain.department.dto.DataPermissionWhereFragmentResolveDto;
 import com.g2rain.department.dto.UpdateStatusDto;
 import com.g2rain.department.vo.DataPermissionMetaVo;
 import com.g2rain.department.vo.DataPermissionPolicyVo;
+import com.g2rain.department.vo.DataPermissionSqlValidateVo;
+import com.g2rain.department.vo.DataPermissionWhereFragmentVo;
 
 import java.util.List;
 
@@ -42,6 +46,16 @@ public interface DataPermissionMetaService {
      * @return 数据权限策略
      */
     DataPermissionPolicyVo resolveDataPermissionPolicy(DataPermissionPolicyResolveDto resolveDto);
+
+    /**
+     * 解析当前登录用户的数据权限 WHERE 片段。
+     */
+    List<DataPermissionWhereFragmentVo> resolveWhereFragments(DataPermissionWhereFragmentResolveDto resolveDto);
+
+    /**
+     * 校验自定义 SELECT 是否满足当前用户的数据权限隔离。
+     */
+    DataPermissionSqlValidateVo validateSql(DataPermissionSqlValidateDto validateDto);
 
     /**
      * 新增或更新数据

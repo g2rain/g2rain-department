@@ -59,6 +59,8 @@ CREATE TABLE `data_permission_model` (
     `model_name` VARCHAR(128) NOT NULL COMMENT                                                          '权限模型名称',
     `module_code` VARCHAR(64) NOT NULL COMMENT                                                          '模块编码，如 order, crm, inventory',
     `table_name` VARCHAR(128) NOT NULL COMMENT                                                          '业务表名（建议小写）',
+    `enable_user_scope` TINYINT(1) NOT NULL DEFAULT 1 COMMENT                                           '是否启用 USER 维度',
+    `enable_dept_scope` TINYINT(1) NOT NULL DEFAULT 1 COMMENT                                           '是否启用 DEPT 维度',
     `remark` VARCHAR(512) NULL COMMENT                                                                  '备注说明（如：订单主表权限模型）',
     `create_time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP COMMENT                                      '创建时间',
     `update_time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT          '更新时间',

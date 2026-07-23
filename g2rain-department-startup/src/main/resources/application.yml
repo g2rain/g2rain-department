@@ -21,8 +21,8 @@ spring:
       server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
       # 注册中心
       discovery:
-        #username: ${SPRING_CLOUD_NACOS_DISCOVERY_USERNAME:nacos}        # 注册中心用户
-        #password: ${SPRING_CLOUD_NACOS_DISCOVERY_PASSWORD:g2rain_nacos} # 注册中心密码
+        username: ${SPRING_CLOUD_NACOS_DISCOVERY_USERNAME:nacos}        # 注册中心用户
+        password: ${SPRING_CLOUD_NACOS_DISCOVERY_PASSWORD:g2rain_nacos} # 注册中心密码
         namespace: ${SPRING_CLOUD_NACOS_DISCOVERY_NAMESPACE:dev}        # 隔离命名空间
         group: g2rain                                                   # 服务分组, 微服务实例归属类别
         service: ${spring.application.name}                             # 服务名，方便注册和发现
@@ -30,8 +30,8 @@ spring:
         heart-beat-timeout: 15000                                       # 服务实例心跳超时时间(毫秒）
       # 配置中心
       config:
-        #username: ${SPRING_CLOUD_NACOS_CONFIG_USERNAME:nacos}           # 配置中心用户
-        #password: ${SPRING_CLOUD_NACOS_CONFIG_PASSWORD:g2rain_nacos}    # 配置中心密码
+        username: ${SPRING_CLOUD_NACOS_CONFIG_USERNAME:nacos}           # 配置中心用户
+        password: ${SPRING_CLOUD_NACOS_CONFIG_PASSWORD:g2rain_nacos}    # 配置中心密码
         namespace: ${SPRING_CLOUD_NACOS_CONFIG_NAMESPACE:dev}           # 隔离命名空间
         group: ${spring.application.name}                               # 配置分组, 默认 DEFAULT_GROUP
         file-extension: yaml                                            # 配置文件的后缀名

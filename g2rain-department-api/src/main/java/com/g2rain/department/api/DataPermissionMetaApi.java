@@ -6,10 +6,16 @@ import com.g2rain.common.model.PageData;
 import com.g2rain.common.model.PageSelectListDto;
 import com.g2rain.common.model.Result;
 import com.g2rain.department.dto.DataPermissionPolicyResolveDto;
+import com.g2rain.department.dto.DataPermissionSqlValidateDto;
+import com.g2rain.department.dto.DataPermissionWhereFragmentResolveDto;
 import com.g2rain.department.vo.DataPermissionPolicyVo;
+import com.g2rain.department.vo.DataPermissionSqlValidateVo;
+import com.g2rain.department.vo.DataPermissionWhereFragmentVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -52,4 +58,12 @@ public interface DataPermissionMetaApi {
     @GetMapping("/policy_resolve")
     @Operation(summary = "解析数据权限策略", hidden = true, description = "根据用户、部门路径和业务模型解析数据权限策略")
     Result<DataPermissionPolicyVo> resolveDataPermissionPolicy(DataPermissionPolicyResolveDto resolveDto);
+
+    @GetMapping("/where_fragments")
+    @Operation(summary = "解析数据权限 WHERE 片段", hidden = true, description = "为当前登录用户生成各表数据权限 WHERE 片段")
+    Result<List<DataPermissionWhereFragmentVo>> resolveWhereFragments(DataPermissionWhereFragmentResolveDto resolveDto);
+
+    @PostMapping("/validate_sql")
+    @Operation(summary = "校验 SQL 数据权限隔离", hidden = true, description = "校验自定义 SELECT 是否满足当前用户的数据权限隔离")
+    Result<DataPermissionSqlValidateVo> validateSql(@RequestBody DataPermissionSqlValidateDto validateDto);
 }
