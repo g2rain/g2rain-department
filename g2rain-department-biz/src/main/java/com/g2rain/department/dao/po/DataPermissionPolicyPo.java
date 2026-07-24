@@ -19,4 +19,6 @@ public class DataPermissionPolicyPo {
     private Integer otherPermissionMode;
 
     private String permissionRule;
+
+    private Integer inGroup;
 }

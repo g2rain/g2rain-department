@@ -22,4 +22,10 @@ public class DataPermissionWhereFragmentVo {
 
     @Schema(description = "OR 合并后的权限 WHERE 片段")
     private String whereFragment;
+
+    @Schema(description = "当前用户是否具备查询权限")
+    private boolean hasQueryPermission;
+
+    @Schema(description = "无查询权限时的提示")
+    private String message;
 }

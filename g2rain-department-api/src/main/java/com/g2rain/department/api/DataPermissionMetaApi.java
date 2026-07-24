@@ -64,6 +64,6 @@ public interface DataPermissionMetaApi {
     Result<List<DataPermissionWhereFragmentVo>> resolveWhereFragments(DataPermissionWhereFragmentResolveDto resolveDto);
 
     @PostMapping("/validate_sql")
-    @Operation(summary = "校验 SQL 数据权限隔离", hidden = true, description = "校验自定义 SELECT 是否满足当前用户的数据权限隔离")
+    @Operation(summary = "校验 SQL 数据权限隔离", hidden = true, description = "校验自定义 SELECT 是否满足 department 模块配置的数据权限条件（不校验 organ_id 租户过滤）")
     Result<DataPermissionSqlValidateVo> validateSql(@RequestBody DataPermissionSqlValidateDto validateDto);
 }

@@ -28,6 +28,7 @@
         <result column="group_permission_mode" property="groupPermissionMode" jdbcType="INTEGER"/>
         <result column="other_permission_mode" property="otherPermissionMode" jdbcType="INTEGER"/>
         <result column="permission_rule" property="permissionRule" jdbcType="LONGVARCHAR"/>
+        <result column="in_group" property="inGroup" jdbcType="INTEGER"/>
     </resultMap>
 
     <!-- 定义可复用排序方向片段 -->
@@ -318,7 +319,8 @@
             meta.id AS meta_id,
             meta.permission_mode AS group_permission_mode,
             CAST(COALESCE(BIT_OR(other_rule.permission_mode), 0) AS SIGNED) AS other_permission_mode,
-            GROUP_CONCAT(DISTINCT CONCAT('(', other_rule.permission_rule, ')') ORDER BY other_rule.id SEPARATOR ' OR ') AS permission_rule
+            GROUP_CONCAT(DISTINCT CONCAT('(', other_rule.permission_rule, ')') ORDER BY other_rule.id SEPARATOR ' OR ') AS permission_rule,
+            MAX(CASE WHEN matched_group.group_id IS NOT NULL THEN 1 ELSE 0 END) AS in_group
         FROM data_permission_model model
         INNER JOIN data_permission_meta meta
             ON meta.model_id = model.id

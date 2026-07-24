@@ -2,16 +2,12 @@ package com.g2rain.department.service.support;
 
 import com.g2rain.data.isolation.model.DataIsolationMeta;
 import com.g2rain.data.isolation.model.DataPermissionPolicyResolveResult;
+import com.g2rain.department.enums.DepartmentErrorCode;
 import com.g2rain.department.vo.DataPermissionSqlValidateTableVo;
 import com.g2rain.department.vo.DataPermissionSqlValidateVo;
 import com.g2rain.mybatis.extension.SqlParserDelegate;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.LongValue;
-import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
-import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
-import net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList;
-import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.FromItem;
@@ -31,7 +27,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * 从 SQL 提取物理表并校验数据权限隔离条件。
+ * 从 SQL 提取物理表并校验 department 模块配置的数据权限条件。
  */
 public final class DataPermissionSqlIsolationValidator {
 
@@ -54,7 +50,6 @@ public final class DataPermissionSqlIsolationValidator {
     public static DataPermissionSqlValidateVo validate(
         String sql,
         String moduleCode,
-        Long organId,
         String deptPathsCsv,
         Function<String, DataPermissionIsolationContext> contextResolver
     ) {
@@ -106,18 +101,29 @@ public final class DataPermissionSqlIsolationValidator {
 
             DataIsolationMeta meta = context.getIsolationMeta();
             DataPermissionPolicyResolveResult policy = context.getPolicy();
-            Expression permissionExpr = DataPermissionWhereFragmentSupport.buildReadConditionExpression(
-                reference.table(), meta, policy, deptPathsCsv
+            if (!DataPermissionWhereFragmentSupport.canQuery(policy, context.isInGroup())) {
+                item.setRequiredCondition(null);
+                item.setPassed(false);
+                item.setMessage(DepartmentErrorCode.DATA_PERMISSION_TABLE_QUERY_FORBIDDEN.messageTemplate());
+                allPassed = false;
+                if (!StringUtils.hasText(firstFailure)) {
+                    firstFailure = tableName + ": " + item.getMessage();
+                }
+                deduplicated.put(dedupeKey, item);
+                continue;
+            }
+
+            Expression requiredCondition = DataPermissionWhereFragmentSupport.buildGatedReadConditionExpression(
+                reference.table(), meta, policy, context.isInGroup(), deptPathsCsv
             );
-            Expression requiredCondition = buildRequiredCondition(reference.table(), meta, organId, permissionExpr);
-            item.setRequiredCondition(requiredCondition.toString());
+            item.setRequiredCondition(Objects.isNull(requiredCondition) ? null : requiredCondition.toString());
 
             Expression userWhere = reference.plainSelect().getWhere();
             boolean passed = WhereExpressionCoverageChecker.covers(userWhere, requiredCondition);
             item.setPassed(passed);
             if (!passed) {
                 allPassed = false;
-                item.setMessage(resolveFailureMessage(userWhere, meta, organId, permissionExpr));
+                item.setMessage(resolveFailureMessage(userWhere, requiredCondition));
                 if (!StringUtils.hasText(firstFailure)) {
                     firstFailure = tableName + ": " + item.getMessage();
                 }
@@ -208,41 +214,7 @@ public final class DataPermissionSqlIsolationValidator {
         return Objects.nonNull(table.getAlias()) ? table.getAlias().getName() : null;
     }
 
-    private static Expression buildRequiredCondition(
-        Table table,
-        DataIsolationMeta meta,
-        Long organId,
-        Expression permissionExpr
-    ) {
-        Expression organExpr = buildOrganExpression(table, meta.getOrganIdColumnName(), organId);
-        if (Objects.isNull(permissionExpr)) {
-            return organExpr;
-        }
-        return new AndExpression(
-            new ParenthesedExpressionList<>(organExpr),
-            new ParenthesedExpressionList<>(permissionExpr)
-        );
-    }
-
-    private static Expression buildOrganExpression(Table table, String columnName, Long organId) {
-        StringBuilder column = new StringBuilder();
-        if (Objects.nonNull(table.getAlias())) {
-            column.append(table.getAlias().getName()).append(".");
-        }
-        Column colName = new Column(column.append(columnName).toString());
-        return new EqualsTo(colName, new LongValue(organId));
-    }
-
-    private static String resolveFailureMessage(
-        Expression userWhere,
-        DataIsolationMeta meta,
-        Long organId,
-        Expression permissionExpr
-    ) {
-        Expression organExpr = buildOrganExpression(new Table(meta.getPermissionTableName()), meta.getOrganIdColumnName(), organId);
-        if (!WhereExpressionCoverageChecker.covers(userWhere, organExpr)) {
-            return "缺少 organ_id 租户过滤条件";
-        }
+    private static String resolveFailureMessage(Expression userWhere, Expression permissionExpr) {
         if (Objects.nonNull(permissionExpr)
             && !WhereExpressionCoverageChecker.covers(userWhere, permissionExpr)) {
             return "缺少数据权限过滤条件";

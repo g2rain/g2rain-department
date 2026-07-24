@@ -32,4 +32,6 @@ public class DataPermissionIsolationContext {
     private DataIsolationMeta isolationMeta;
 
     private DataPermissionPolicyResolveResult policy;
+
+    private boolean inGroup;
 }

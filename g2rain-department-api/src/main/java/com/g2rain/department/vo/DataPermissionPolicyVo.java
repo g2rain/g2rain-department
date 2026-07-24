@@ -31,4 +31,7 @@ public class DataPermissionPolicyVo {
 
     @Schema(description = "Other 权限规则 SQL 片段")
     private String otherPermRule;
+
+    @Schema(description = "当前用户是否在权限分组中")
+    private boolean inGroup;
 }

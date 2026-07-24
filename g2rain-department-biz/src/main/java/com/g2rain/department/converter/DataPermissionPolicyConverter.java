@@ -19,5 +19,6 @@ public interface DataPermissionPolicyConverter {
     @Mapping(target = "groupWrite", source = "groupPermissionMode", qualifiedByName = "permissionModeIntToWrite")
     @Mapping(target = "otherRead", source = "otherPermissionMode", qualifiedByName = "permissionModeIntToRead")
     @Mapping(target = "otherWrite", source = "otherPermissionMode", qualifiedByName = "permissionModeIntToWrite")
+    @Mapping(target = "inGroup", expression = "java(po.getInGroup() != null && po.getInGroup() > 0)")
     DataPermissionPolicyVo po2vo(DataPermissionPolicyPo po);
 }

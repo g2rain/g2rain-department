@@ -17,6 +17,10 @@ public final class DataPermissionWhereFragmentSupport {
     private DataPermissionWhereFragmentSupport() {
     }
 
+    public static boolean canQuery(DataPermissionPolicyResolveResult policy, boolean inGroup) {
+        return Objects.nonNull(policy) && policy.isGroupRead() && inGroup;
+    }
+
     public static Expression buildReadConditionExpression(
         Table table,
         DataIsolationMeta meta,
@@ -39,6 +43,30 @@ public final class DataPermissionWhereFragmentSupport {
         String deptPathsCsv
     ) {
         Expression expression = buildReadConditionExpression(table, meta, policy, deptPathsCsv);
+        return Objects.isNull(expression) ? null : expression.toString();
+    }
+
+    public static Expression buildGatedReadConditionExpression(
+        Table table,
+        DataIsolationMeta meta,
+        DataPermissionPolicyResolveResult policy,
+        boolean inGroup,
+        String deptPathsCsv
+    ) {
+        if (!canQuery(policy, inGroup)) {
+            return null;
+        }
+        return buildReadConditionExpression(table, meta, policy, deptPathsCsv);
+    }
+
+    public static String buildGatedReadConditionFragment(
+        Table table,
+        DataIsolationMeta meta,
+        DataPermissionPolicyResolveResult policy,
+        boolean inGroup,
+        String deptPathsCsv
+    ) {
+        Expression expression = buildGatedReadConditionExpression(table, meta, policy, inGroup, deptPathsCsv);
         return Objects.isNull(expression) ? null : expression.toString();
     }
 }

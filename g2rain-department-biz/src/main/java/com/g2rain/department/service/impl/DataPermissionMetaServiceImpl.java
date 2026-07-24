@@ -37,12 +37,11 @@ import com.g2rain.department.service.support.DataPermissionPolicyCacheBroadcaste
 import com.g2rain.department.service.support.DataPermissionPolicyChangeDetector;
 import com.g2rain.department.service.support.DataPermissionPolicyResolveResultConverter;
 import com.g2rain.department.service.support.DataPermissionSqlIsolationValidator;
-import com.g2rain.department.service.support.DataPermissionWhereFragmentSupport;
+import com.g2rain.department.service.support.DataPermissionWhereFragmentVoSupport;
 import com.g2rain.department.vo.DataPermissionMetaVo;
 import com.g2rain.department.vo.DataPermissionPolicyVo;
 import com.g2rain.department.vo.DataPermissionSqlValidateVo;
 import com.g2rain.department.vo.DataPermissionWhereFragmentVo;
-import com.g2rain.data.isolation.model.DataPermissionPolicyResolveResult;
 import com.g2rain.mybatis.pagination.PageContext;
 import com.g2rain.mybatis.pagination.model.Page;
 import jakarta.annotation.Resource;
@@ -174,18 +173,17 @@ public class DataPermissionMetaServiceImpl implements DataPermissionMetaService 
             }
 
             Table table = new Table(tableName);
-            DataPermissionPolicyResolveResult policy = context.getPolicy();
-            String whereFragment = DataPermissionWhereFragmentSupport.buildReadConditionFragment(
-                table, context.getIsolationMeta(), policy, context.getDeptPathsCsv()
-            );
-            if (!StringUtils.hasText(whereFragment)) {
-                continue;
-            }
-
             DataPermissionWhereFragmentVo vo = new DataPermissionWhereFragmentVo();
             vo.setModuleCode(moduleCode);
             vo.setTableName(tableName);
-            vo.setWhereFragment(whereFragment);
+            DataPermissionWhereFragmentVoSupport.enrich(
+                vo,
+                context.getPolicy(),
+                context.isInGroup(),
+                context.getDeptPathsCsv(),
+                table,
+                context.getIsolationMeta()
+            );
             fragments.put(fragmentKey, vo);
         }
         return new ArrayList<>(fragments.values());
@@ -200,7 +198,6 @@ public class DataPermissionMetaServiceImpl implements DataPermissionMetaService 
         return DataPermissionSqlIsolationValidator.validate(
             validateDto.getSql(),
             validateDto.getModuleCode(),
-            identity.organId(),
             identity.deptPathsCsv(),
             tableName -> resolveIsolationContext(validateDto.getModuleCode(), tableName, identity)
         );
@@ -254,6 +251,7 @@ public class DataPermissionMetaServiceImpl implements DataPermissionMetaService 
         context.setFields(fields);
         context.setIsolationMeta(DataPermissionIsolationMetaAdapter.toMeta(modelPo, fields));
         context.setPolicy(DataPermissionPolicyResolveResultConverter.fromVo(policyVo));
+        context.setInGroup(Objects.nonNull(policyVo) && policyVo.isInGroup());
         return context;
     }
 

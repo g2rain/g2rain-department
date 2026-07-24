@@ -22,7 +22,10 @@ public enum DepartmentErrorCode implements ErrorCode {
     DEPARTMENT_IDP_SYNC_FORBIDDEN("department.40004", "无权执行部门 IdP 同步"),
 
     @Schema(description = "缺少登录用户或机构上下文")
-    DATA_PERMISSION_IDENTITY_REQUIRED("department.40005", "缺少登录用户或机构上下文");
+    DATA_PERMISSION_IDENTITY_REQUIRED("department.40005", "缺少登录用户或机构上下文"),
+
+    @Schema(description = "对表不具备查询权限")
+    DATA_PERMISSION_TABLE_QUERY_FORBIDDEN("department.40006", "对于该表不具备查询权限");
 
     private final String code;
     private final String messageTemplate;
