@@ -45,4 +45,10 @@ public class DepartmentUserRelationSelectDto extends BaseSelectListDto {
      */
     @Schema(description = "用户标识集合")
     private java.util.Set<Long> userIds;
+
+    /**
+     * 部门标识集合
+     */
+    @Schema(description = "部门标识集合")
+    private java.util.Set<Long> departmentIds;
 }
