@@ -265,10 +265,51 @@
                     #{item, jdbcType=BIGINT}
                 </foreach>
             </if>
+            <if test="departmentIds != null and departmentIds.size() > 0">
+                AND department_id IN
+                <foreach collection="departmentIds" item="item" open="(" separator="," close=")">
+                    #{item, jdbcType=BIGINT}
+                </foreach>
+            </if>
             <!-- 过滤已删除的记录 -->
             AND (delete_flag = 0 OR delete_flag IS NULL)
         </where>
         <include refid="dynamicOrderBy"/>
+    </select>
+
+    <select id="selectListWithoutIsolation" parameterType="com.g2rain.department.dto.DepartmentUserRelationSelectDto"
+            resultMap="BaseResultMap">
+        SELECT
+        id,
+        create_time, update_time,
+        organ_id, department_id, user_id,
+        delete_flag,
+        version
+        FROM department_user_relation
+        <where>
+            <if test="organId != null">
+                AND organ_id = #{organId, jdbcType=BIGINT}
+            </if>
+            <if test="departmentId != null">
+                AND department_id = #{departmentId, jdbcType=BIGINT}
+            </if>
+            <if test="userId != null">
+                AND user_id = #{userId, jdbcType=BIGINT}
+            </if>
+            <if test="userIds != null and userIds.size() > 0">
+                AND user_id IN
+                <foreach collection="userIds" item="item" open="(" separator="," close=")">
+                    #{item, jdbcType=BIGINT}
+                </foreach>
+            </if>
+            <if test="departmentIds != null and departmentIds.size() > 0">
+                AND department_id IN
+                <foreach collection="departmentIds" item="item" open="(" separator="," close=")">
+                    #{item, jdbcType=BIGINT}
+                </foreach>
+            </if>
+            AND (delete_flag = 0 OR delete_flag IS NULL)
+        </where>
     </select>
 
     <select id="selectDeptPaths" resultType="java.lang.String">

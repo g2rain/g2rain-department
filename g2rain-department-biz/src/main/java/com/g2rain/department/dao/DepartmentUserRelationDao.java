@@ -76,6 +76,12 @@ public interface DepartmentUserRelationDao {
     List<DepartmentUserRelationPo> selectList(DepartmentUserRelationSelectDto selectDto);
 
     /**
+     * 根据查询入参 DTO 筛选列表（非隔离语义）。
+     */
+    @IgnoreIsolation
+    List<DepartmentUserRelationPo> selectListWithoutIsolation(DepartmentUserRelationSelectDto selectDto);
+
+    /**
      * 根据机构和用户查询关联部门路径。
      *
      * @param organId 机构标识
