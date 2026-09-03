@@ -19,6 +19,7 @@
 ## 目录
 
 - 项目简介
+- 项目文档
 - 平台定位
 - 业务域说明
 - 功能概览
@@ -45,6 +46,10 @@
 ## 项目简介
 
 部门与数据权限后端服务，围绕部门树、成员归属、身份提供方同步、数据权限模型、字段、策略与权限组提供统一领域能力；为管理端、主体增强组件和业务服务的数据隔离链路提供控制面能力
+
+## 项目文档
+
+完整的架构、开发、安全、配置、部署和需求说明见 [`docs/index.md`](docs/index.md)。项目当前计划接入中央 `java-domain-service 1.0.0`，尚待处理的基线差异见 [`docs/architecture/deviations.md`](docs/architecture/deviations.md)。
 
 ## 平台定位
 
@@ -104,11 +109,11 @@
 
 | 流程 | 关键步骤 | 代码线索 |
 | --- | --- | --- |
-| 部门树维护 | 查询部门列表或树 → 校验机构边界与父部门关系 → 新增或更新部门及负责人 → 更新启停状态或删除节点 → 广播部门与策略缓存失效事件 | DepartmentController、DepartmentService、DepartmentTreeVo、DepartmentPolicyCacheInvalidationBroadcaster |
+| 部门树维护 | 查询部门列表或树 → 校验机构边界与父部门关系 → 新增或更新部门及负责人 → 更新启停状态或删除节点 → 广播部门与策略缓存失效事件 | DepartmentController、DepartmentService、DepartmentTreeVo、DataPermissionPolicyCacheBroadcaster |
 | 部门与权限组成员分配 | 提交用户标识集合 → 校验部门或权限组 → 批量新增成员关系 → 更新关系状态或移除成员 → 主体增强或策略解析读取最新关系 | DepartmentUserRelationController、DataPermissionGroupUserRelationController、DepartmentAssignUsersDto、GroupAssignUsersDto |
 | 身份提供方部门同步 | 校验当前主体是管理员且机构匹配 → 按父部门优先顺序整理 IdP 部门 → 新增或更新平台部门并保存 IdP 映射 → 按增量或全量模式同步成员 → 全量对账时按安全开关移除失效关系 → 返回同步结果与映射标识 | DepartmentIdpSyncController、DepartmentIdpSyncService、DepartmentIdpSyncDto、DepartmentIdpSyncResultVo |
 | 数据权限配置 | 定义数据权限模型 → 登记应用与业务表元数据 → 配置可参与过滤的条件字段 → 建立权限组并分配用户 → 补充特殊权限规则 → 发布策略缓存失效事件 | DataPermissionModelController、DataPermissionMetaController、DataPermissionFieldController、DataPermissionGroupController、DataPermissionOtherController |
-| 运行时策略解析 | 客户端提交应用、业务表和主体信息 → 加载匹配的数据权限元数据 → 聚合部门、权限组与特殊规则 → 解析字段条件和最终数据范围 → 返回运行时权限策略 → 配置变更后由同步事件使缓存失效 | GET /data_permission_meta/policy_resolve、DataPermissionPolicyResolveDto、DataPermissionPolicyResolveVo、DataPermissionMetaService |
+| 运行时策略解析 | 客户端提交应用、业务表和主体信息 → 加载匹配的数据权限元数据 → 聚合部门、权限组与特殊规则 → 解析字段条件和最终数据范围 → 返回运行时权限策略 → 配置变更后由同步事件使缓存失效 | GET /data_permission_meta/policy_resolve、DataPermissionPolicyResolveDto、DataPermissionPolicyVo、DataPermissionMetaService |
 
 ## 流程图
 

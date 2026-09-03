@@ -1,0 +1,110 @@
+schemaVersion: 1
+name: g2rain-department
+family: backend-domain-service
+role: 平台部门治理与数据权限策略服务
+language: Java
+buildTool: Maven
+
+architectureBaseline:
+  repository: https://github.com/g2rain/g2rain
+  ref: architecture-v1.0.0
+  profile: docs/architecture/profiles/java-domain-service
+  version: 1.0.0
+  status: planned
+  releasedAt: "2026-08-24"
+  deviations: docs/architecture/deviations.md
+
+ownership:
+  owns:
+    - 租户内部门树、部门状态和部门成员关系
+    - 外部身份提供方部门映射与成员关系同步
+    - 数据权限模型、字段、元数据、权限组和特殊规则
+    - 运行时数据权限策略解析与缓存失效广播
+  excludes:
+    - 用户、机构、应用和 Passport 主数据
+    - 登录认证、OAuth/OIDC、Token 与 Session
+    - 网关路由和统一入口鉴权
+    - 下游业务 SQL 的实际数据隔离执行
+
+modules:
+  - name: g2rain-department-api
+    path: g2rain-department-api
+    role: 查询及受信领域契约
+    mayDependOn: []
+  - name: g2rain-department-biz
+    path: g2rain-department-biz
+    role: 部门与数据权限领域实现
+    mayDependOn:
+      - g2rain-department-api
+  - name: g2rain-department-startup
+    path: g2rain-department-startup
+    role: Spring Boot 运行时组装
+    mayDependOn:
+      - g2rain-department-biz
+
+runtime:
+  mainClass: com.g2rain.department.Application
+  defaultPort: 8085
+  defaultProfile: dev
+  minimumVersions:
+    java: "25"
+    mysql: "8.0.13"
+  dependencies:
+    - MySQL
+    - Redis
+    - Nacos
+
+commands:
+  verify: mvn clean verify
+  run: mvn -pl g2rain-department-startup -am spring-boot:run
+  codegen: mvn g2rain-crafter:bootstrap
+  image: ./build.sh <tag>
+
+validation:
+  lastVerifiedAt: "2026-09-03"
+  command: mvn clean verify
+  result: passed
+  testsRun: 9
+  note: 当前仅有 DepartmentIdpSyncServiceImplTest；数据库、Controller、缓存事件和 Startup 集成覆盖仍待补充
+
+architectureRules:
+  - 模块依赖方向固定为 startup -> biz -> api
+  - API 模块默认只发布查询契约
+  - App 通过 IAM 取得 Token 后经 Gateway 调用公开写接口
+  - IdP 同步属于受信同步写入例外，必须保持管理员、机构、事务和破坏性对账安全闸
+  - policy_resolve 和 principal_enrichment 属于受信查询入口，隐藏 OpenAPI 不能替代访问控制
+  - 所有租户数据读写必须保持 organId 一致
+  - 配置变化通过 g2rain-syncer 发布权限策略缓存失效事件
+
+documentation:
+  entry: docs/index.md
+  architecture: docs/architecture/overview.md
+  decisions: docs/decisions
+  agentEntry: AGENTS.md
+  required:
+    - docs/requirements/README.md
+    - docs/architecture/overview.md
+    - docs/architecture/modules.md
+    - docs/architecture/dependencies.md
+    - docs/architecture/runtime-flows.md
+    - docs/architecture/deviations.md
+    - docs/development/local-development.md
+    - docs/development/code-conventions.md
+    - docs/development/api-conventions.md
+    - docs/development/database-conventions.md
+    - docs/development/testing.md
+    - docs/development/definition-of-done.md
+    - docs/security/security-boundaries.md
+    - docs/operations/configuration.md
+    - docs/operations/deployment.md
+    - docs/operations/observability.md
+    - docs/operations/troubleshooting.md
+
+aiCoding:
+  instructionEntry: AGENTS.md
+  requirementTemplate: docs/requirements/README.md
+  validation:
+    - 检查需求、中央 Profile、项目偏差、源码、配置、测试和 Git Diff
+    - 执行 mvn clean verify
+    - 动态检查文档链接与元数据一致性
+    - 报告未验证事项和剩余风险
