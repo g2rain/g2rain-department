@@ -6,7 +6,7 @@ mvn -pl g2rain-department-startup -am package
 ./build.sh <tag>
 ```
 
-Startup 使用 Jib 构建 `g2rain/g2rain-department:<version>`，基础镜像为 `eclipse-temurin:25-jre`，主类为 `com.g2rain.department.Application`。
+Startup 使用 Jib 构建 `g2rain/g2rain-department:<version>`，基础镜像为 `eclipse-temurin:25.0.4.1_1-jre`，主类为 `com.g2rain.department.Application`。
 
 部署前检查：
 

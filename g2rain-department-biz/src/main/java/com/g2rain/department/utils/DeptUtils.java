@@ -1,5 +1,7 @@
 package com.g2rain.department.utils;
 
+
+import lombok.extern.slf4j.Slf4j;
 import com.g2rain.common.exception.BusinessException;
 import com.g2rain.common.exception.SystemErrorCode;
 import com.g2rain.common.utils.Strings;
@@ -13,6 +15,7 @@ import java.util.Objects;
  * 一级 0001、0002；二级 00010001、00020001；三级 000100010001。
  * </p>
  */
+@Slf4j
 public final class DeptUtils {
 
     public static final Long ROOT_PARENT_ID = 0L;
@@ -94,6 +97,7 @@ public final class DeptUtils {
 
             return "0".repeat(PATH_SEGMENT_WIDTH - nextCode.length()) + nextCode;
         } catch (NumberFormatException ex) {
+            log.error("failed to incrementSegment", ex);
             throw new BusinessException(SystemErrorCode.PARAM_INVALID_FORMAT, segment, "4位36进制部门路径段");
         }
     }
