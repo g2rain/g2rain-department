@@ -10,4 +10,10 @@ App 经 IAM、Gateway 调用写接口；Controller 绑定参数，Service 校验
 
 ## 数据权限策略
 
-管理端维护模型、字段、租户元数据、权限组、成员关系和特殊规则。受信客户端调用 `policy_resolve`，服务按机构、用户、部门路径、模块和表聚合策略。配置变化通过 `g2rain-syncer` 通知消费者失效本地缓存。
+管理端维护模型、字段、租户元数据、权限组、成员关系和特殊规则。受信客户端调用 `policy_resolve`，服务按机构、用户、部门路径、模块和表聚合策略：
+
+1. 匹配机构内 ACTIVE meta，将其 `permission_mode` 输出为 `groupRead` / `groupWrite`（**不**依赖用户是否属于权限组）。
+2. 按用户 + 组 `dept_path` 精确命中权限组，聚合该组上绑定到该 meta 的 Other 规则为 `otherRead` / `otherWrite` / `otherPermRule`。
+3. 无匹配 meta 时返回 `null`；下游隔离组件负责决定如何处理空策略。
+
+配置变化通过 `g2rain-syncer` 通知消费者失效本地缓存。完整语义见 [数据权限策略](../design/data-permission-policy.md)。
