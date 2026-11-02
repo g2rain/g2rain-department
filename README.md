@@ -6,15 +6,15 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-437291?logo=openjdk&logoColor=white)](https://openjdk.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-2025.1.1-586069?logo=spring&logoColor=white)](https://spring.io/projects/spring-cloud)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.2-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-2025.1.4-586069?logo=spring&logoColor=white)](https://spring.io/projects/spring-cloud)
 [![Maven](https://img.shields.io/badge/build-Maven-C71A36?logo=apachemaven&logoColor=white)](https://maven.apache.org/)
 
-下一代AI软件开发范式，AI原生Agent平台，开源的企业级SaaS底座。
+G2rain（谷雨）是面向企业的开源智能体平台，连接模型、知识与业务工具，以 SaaS 基座和应用开发工具链支撑智能应用落地。智能体平台与智能客服已开发完成并开源；具体组件、版本与接入方式以各责任仓库的说明为准。
 
-部门与数据权限后端服务，围绕部门树、成员归属、身份提供方同步、数据权限模型、字段、策略与权限组提供统一领域能力；为管理端、主体增强组件和业务服务的数据隔离链路提供控制面能力
+`g2rain-department` 是其中的组织治理与数据权限控制面服务，围绕部门树、成员归属、身份提供方同步、数据权限模型、字段、策略与权限组提供领域能力；为管理端、主体增强组件和业务服务的数据隔离链路提供控制面能力。它维护权限元数据与缓存失效信号，但不直接执行下游业务 SQL 的数据隔离，也不代表或替代整个平台能力。
 
-[官网](https://www.g2rain.com) · [Issues](https://github.com/g2rain/g2rain/issues) · [Discussions](https://github.com/g2rain/g2rain/discussions)
+[官网](https://www.g2rain.com) · [完整文档](docs/index.md) · [中央架构 Profile](https://github.com/g2rain/g2rain/tree/architecture-v1.0.0/docs/architecture/profiles/java-domain-service) · [架构说明](docs/architecture/overview.md) · [代码规范](docs/development/code-conventions.md) · [Issues](https://github.com/g2rain/g2rain/issues) · [Discussions](https://github.com/g2rain/g2rain/discussions)
 
 ## 目录
 
@@ -30,6 +30,7 @@
 - 环境要求
 - 快速开始
 - 构建与镜像
+- GHCR 镜像发布
 - 接口示例
 - 安全说明
 - 与关联仓库的关系
@@ -49,7 +50,16 @@
 
 ## 项目文档
 
-完整的架构、开发、安全、配置、部署和需求说明见 [`docs/index.md`](docs/index.md)。项目当前计划接入中央 `java-domain-service 1.0.0`，尚待处理的基线差异见 [`docs/architecture/deviations.md`](docs/architecture/deviations.md)。
+| 场景 | 入口 |
+| --- | --- |
+| 文档首页 | [docs/index.md](docs/index.md) |
+| 中央基线与项目差异 | [Java Domain Service 1.0.0](https://github.com/g2rain/g2rain/tree/architecture-v1.0.0/docs/architecture/profiles/java-domain-service) · [接入项](docs/architecture/deviations.md) |
+| 模块与运行流程 | [模块职责](docs/architecture/modules.md) · [核心运行流程](docs/architecture/runtime-flows.md) |
+| 本地开发、测试与完成定义 | [本地开发](docs/development/local-development.md) · [测试策略](docs/development/testing.md) · [Definition of Done](docs/development/definition-of-done.md) |
+| 配置、安全、镜像与部署 | [配置说明](docs/operations/configuration.md) · [安全边界](docs/security/security-boundaries.md) · [构建与部署](docs/operations/deployment.md) |
+| 发布记录 | [v1.0.0](docs/releases/v1.0.0.md) |
+
+项目当前计划接入中央 `java-domain-service 1.0.0`，尚待处理的基线差异见[接入项](docs/architecture/deviations.md)；这与已采用该基线的仓库不同。
 
 ## 平台定位
 
@@ -90,7 +100,7 @@
 | 部门成员关系 | 维护用户与部门之间的归属关系及身份同步。 |
 | 身份提供方部门同步 | 将外部 IdP 部门树映射到平台部门，按父子顺序写入，并支持增量或全量成员对账。 |
 | 数据权限建模 | 定义业务表的数据权限模型、条件字段和策略元数据。 |
-| 权限分组与策略 | 维护权限组、成员关系、特殊规则及运行时权限策略。 |
+| 权限分组与策略 | 维护权限组与成员，并为组挂接区别于 meta 默认范围的特殊规则；运行时由 `policy_resolve` 聚合。 |
 | 运行时策略解析 | 根据应用、业务表和当前主体聚合权限元数据，向数据隔离客户端返回生效策略。 |
 | 权限变更同步 | 在权限数据变化后广播缓存失效与策略刷新事件。 |
 
@@ -102,7 +112,7 @@
 | 批量分配部门成员 | 需要把用户批量加入部门或权限组，并为主体上下文补充部门归属信息时使用。 |
 | 同步企业身份目录 | 需要将身份提供方的部门和成员同步到平台，或通过全量模式清理已失效关系时使用。 |
 | 配置数据权限模型 | 业务表需要声明隔离模型、条件字段和策略元数据，供运行时数据访问组件消费时使用。 |
-| 维护权限组与特殊规则 | 需要按用户分组授权，或对特定主体设置区别于默认规则的数据范围时使用。 |
+| 维护权限组与特殊规则 | 需要在 meta 默认部门范围之外，按权限组成员挂接字段级例外规则时使用。注意：当前进组并不是获得部门范围过滤的前提。 |
 | 解析运行时权限策略 | 业务服务准备执行隔离查询前，需要根据应用、数据表和当前主体获取最终策略时使用。 |
 
 ## 核心流程
@@ -113,7 +123,7 @@
 | 部门与权限组成员分配 | 提交用户标识集合 → 校验部门或权限组 → 批量新增成员关系 → 更新关系状态或移除成员 → 主体增强或策略解析读取最新关系 | DepartmentUserRelationController、DataPermissionGroupUserRelationController、DepartmentAssignUsersDto、GroupAssignUsersDto |
 | 身份提供方部门同步 | 校验当前主体是管理员且机构匹配 → 按父部门优先顺序整理 IdP 部门 → 新增或更新平台部门并保存 IdP 映射 → 按增量或全量模式同步成员 → 全量对账时按安全开关移除失效关系 → 返回同步结果与映射标识 | DepartmentIdpSyncController、DepartmentIdpSyncService、DepartmentIdpSyncDto、DepartmentIdpSyncResultVo |
 | 数据权限配置 | 定义数据权限模型 → 登记应用与业务表元数据 → 配置可参与过滤的条件字段 → 建立权限组并分配用户 → 补充特殊权限规则 → 发布策略缓存失效事件 | DataPermissionModelController、DataPermissionMetaController、DataPermissionFieldController、DataPermissionGroupController、DataPermissionOtherController |
-| 运行时策略解析 | 客户端提交应用、业务表和主体信息 → 加载匹配的数据权限元数据 → 聚合部门、权限组与特殊规则 → 解析字段条件和最终数据范围 → 返回运行时权限策略 → 配置变更后由同步事件使缓存失效 | GET /data_permission_meta/policy_resolve、DataPermissionPolicyResolveDto、DataPermissionPolicyVo、DataPermissionMetaService |
+| 运行时策略解析 | 客户端提交应用、业务表和主体信息 → 加载匹配 meta 并输出默认读写位 → 按用户与组 `dept_path` 命中权限组并聚合 Other 规则 → 返回策略给隔离客户端 → 配置变更后广播缓存失效 | GET /data_permission_meta/policy_resolve、DataPermissionPolicyResolveDto、DataPermissionPolicyVo、DataPermissionMetaService |
 
 ## 流程图
 
@@ -137,7 +147,7 @@ flowchart TD
 
 | 类别 | 说明 |
 | --- | --- |
-| 运行时 | Java 25、Spring Boot 4.0.5、Spring Cloud 2025.1.1 |
+| 运行时 | Java 25、Spring Boot 4.1.2、Spring Cloud 2025.1.4 |
 | 安全与令牌 | g2rain-starter-aegis-core |
 | 基础设施 | Redis、Nacos |
 | 其他 | Lombok |
@@ -155,9 +165,9 @@ flowchart TD
 | 步骤 | 命令或位置 | 说明 |
 | --- | --- | --- |
 | 准备运行环境 | JDK 25+、Maven 3.9+、Redis、Nacos | 后端服务启动前需要准备 Java 构建环境和平台依赖的基础设施。 |
-| 调整配置 | `src/main/resources/application.yml` | 按需设置 SERVER_PORT、SPRING_PROFILES_ACTIVE、NACOS_SERVER_ADDR 等环境变量。 |
-| 构建项目 | `mvn clean package` | 执行 Maven 构建并生成可执行 Jar。 |
-| 本地启动 | `mvn spring-boot:run` | 以当前 profile 启动服务，默认端口以 application.yml 中的 SERVER_PORT 为准。 |
+| 调整配置 | `g2rain-department-startup/src/main/resources/application.yml` | 按需设置 SERVER_PORT、SPRING_PROFILES_ACTIVE、NACOS_SERVER_ADDR 等环境变量。 |
+| 构建项目 | `mvn clean verify` | 执行完整 Maven 构建与当前测试。 |
+| 本地启动 | `mvn -pl g2rain-department-startup -am spring-boot:run` | 以当前 profile 启动服务，默认端口以 application.yml 中的 SERVER_PORT 为准。 |
 
 版本号以项目构建配置为准，当前识别为 `1.0.0`。
 
@@ -165,20 +175,29 @@ flowchart TD
 
 | 目标 | 命令 | 产物 | 说明 |
 | --- | --- | --- | --- |
-| 可执行 Jar | `mvn clean package` | `g2rain-department-1.0.0.jar` | 执行 Maven 标准构建，生成服务可执行产物。 |
-| 本地运行 | `mvn spring-boot:run` | 本地 Spring Boot 进程 | 使用当前 profile 启动服务，便于本地联调。 |
-| 构建脚本 | `./build.sh` | 脚本定义的构建结果 | 仓库提供 build.sh，可承载组织内约定的镜像或发布流程。 |
+| 可执行 Jar | `mvn -pl g2rain-department-startup -am package` | `g2rain-department-startup-1.0.0.jar` | 执行 Maven 标准构建，生成服务可执行产物。 |
+| 本地运行 | `mvn -pl g2rain-department-startup -am spring-boot:run` | 本地 Spring Boot 进程 | 使用当前 profile 启动服务，便于本地联调。 |
+| 本地容器构建 | `./build.sh 1.0.0` | 本机 Docker daemon 中的 Jib 镜像 | 不推送 GHCR，复用 CI 相同的 Jib 镜像配置。 |
+
+## GHCR 镜像发布
+
+- 镜像地址：`ghcr.io/g2rain/g2rain-department`
+- 标签：稳定版为 `<version>`（例如 `1.0.0`），提交追溯标签为 `sha-<完整提交 SHA>`；不发布或更新 `latest`。
+- 拉取示例：`docker pull ghcr.io/g2rain/g2rain-department:1.0.0`（包公开后可匿名拉取）。
+- 触发条件：仅当已进入 `main` 的稳定版 `vMAJOR.MINOR.PATCH` tag 被推送时；工作流还会验证 tag 提交上的同版本发布说明、Maven 版本并执行 `mvn clean verify`。
+
+完整的镜像内容、生产密钥注入、GHCR 权限、首次公开设置及部署边界见[部署说明](docs/operations/deployment.md)和[v1.0.0 发布说明](docs/releases/v1.0.0.md)。本仓库只提供控制面服务，不代表 G2rain 平台的全部能力；平台当前能力与状态以 [g2rain 中央仓库](https://github.com/g2rain/g2rain)为准。
 
 ## 接口示例
 
 | 示例 | 方法 | 路径 | 用途 | 调用示例 |
 | --- | --- | --- | --- | --- |
-| 查询部门树 | GET | `/department/tree` | 获取当前机构下可用于管理页面或主体增强的部门树。 | `curl http://localhost:8080/department/tree` |
-| 保存部门 | POST | `/department/save` | 新增或更新部门基础信息和层级关系。 | `curl -X POST http://localhost:8080/department/save -H 'Content-Type: application/json' -d '{...}'` |
-| 批量分配部门成员 | POST | `/department_user_relation/add_users` | 将一组用户批量加入指定部门。 | `curl -X POST http://localhost:8080/department_user_relation/add_users -H 'Content-Type: application/json' -d '{...}'` |
-| 同步 IdP 部门 | POST | `/department_idp_sync/sync` | 按增量或全量模式同步身份提供方部门和成员关系。 | `curl -X POST http://localhost:8080/department_idp_sync/sync -H 'Content-Type: application/json' -d '{...}'` |
-| 解析数据权限策略 | GET | `/data_permission_meta/policy_resolve` | 根据应用、业务表和主体信息返回运行时生效的数据权限策略。 | `curl 'http://localhost:8080/data_permission_meta/policy_resolve?applicationName=demo&tableName=sample'` |
-| 批量分配权限组成员 | POST | `/data_permission_group_user_relation/add_users` | 将用户批量加入数据权限组，使分组规则参与策略解析。 | `curl -X POST http://localhost:8080/data_permission_group_user_relation/add_users -H 'Content-Type: application/json' -d '{...}'` |
+| 查询部门树 | GET | `/department/tree` | 获取当前机构下可用于管理页面或主体增强的部门树。 | `curl http://localhost:8085/department/tree` |
+| 保存部门 | POST | `/department/save` | 新增或更新部门基础信息和层级关系。 | `curl -X POST http://localhost:8085/department/save -H 'Content-Type: application/json' -d '{...}'` |
+| 批量分配部门成员 | POST | `/department_user_relation/add_users` | 将一组用户批量加入指定部门。 | `curl -X POST http://localhost:8085/department_user_relation/add_users -H 'Content-Type: application/json' -d '{...}'` |
+| 同步 IdP 部门 | POST | `/department_idp_sync/sync` | 按增量或全量模式同步身份提供方部门和成员关系。 | `curl -X POST http://localhost:8085/department_idp_sync/sync -H 'Content-Type: application/json' -d '{...}'` |
+| 解析数据权限策略 | GET | `/data_permission_meta/policy_resolve` | 根据应用、业务表和主体信息返回运行时生效的数据权限策略。 | `curl 'http://localhost:8085/data_permission_meta/policy_resolve?organId=...&userId=...&deptPaths=...&moduleCode=demo&tableName=sample'` |
+| 批量分配权限组成员 | POST | `/data_permission_group_user_relation/add_users` | 将用户批量加入数据权限组，使分组规则参与策略解析。 | `curl -X POST http://localhost:8085/data_permission_group_user_relation/add_users -H 'Content-Type: application/json' -d '{...}'` |
 
 ## 安全说明
 
@@ -301,7 +320,7 @@ flowchart TD
 
 ## 许可证
 
-本项目基于 [Apache 2.0许可证](https://github.com/g2rain/g2rain-department/blob/main/LICENSE) 开源。
+本项目基于 [Apache 2.0 许可证](LICENSE) 开源。
 
 ## 联系我们
 

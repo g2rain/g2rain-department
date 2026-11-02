@@ -14,6 +14,14 @@
 
 租户表必须在查询、写入、索引和业务校验中保持 `organ_id` 一致。使用 `WithoutIsolation` 查询时，受信 Service 必须显式验证机构边界。
 
+### 数据权限相关约定
+
+- `department.dept_path` / `data_permission_group.dept_path` 使用固定 4 位段编码，保证消费方 `LIKE '{path}%'` 不会误匹配兄弟节点。
+- `data_permission_meta` 在同一 `organ_id + model_id` 下业务上应唯一（服务层有重复校验）；DDL 以脚本与迁移为准。
+- `data_permission_group_user_relation` 当前以索引支持查询；业务层应防止同一用户在同组重复有效关系。
+- `data_permission_other` 以 `(meta_id, group_id)` 关联策略与权限组；`permission_rule` 存 SQL 条件片段，变更需评估下游隔离安全。
+- 策略语义见 [数据权限策略](../design/data-permission-policy.md)。
+
 逻辑删除唯一键必须声明语义：
 
 - 删除后允许重建：使用 `(IF(delete_flag = 0, 0, NULL))` 函数唯一索引。

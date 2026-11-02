@@ -4,10 +4,10 @@ set -e
 # 切到脚本所在目录（确保在 g2rain-department 根目录执行）
 cd "$(dirname "$0")"
 
-APP_IMAGE="g2rain/g2rain-department"
+APP_IMAGE="${APP_IMAGE:-ghcr.io/g2rain/g2rain-department}"
 
-# 第一个参数可选：指定 tag；不传时默认 latest
-TAG="${1:-latest}"
+# 发布镜像不使用 latest；本地 Docker daemon 构建也必须显式指定版本或测试标签。
+TAG="${1:?Usage: ./build.sh <tag>}"
 
 echo "Building Docker image: ${APP_IMAGE}:${TAG}"
 
