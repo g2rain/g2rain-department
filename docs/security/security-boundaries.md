@@ -12,6 +12,13 @@
 - 部门、成员关系、权限元数据、权限组、映射和策略查询必须限定在同一机构。
 - `selectListWithoutIsolation` 等绕过隔离路径只能由受信 Service 调用，并补足机构校验。
 
+## 数据权限策略边界
+
+- `policy_resolve` 的 `deptPaths` 应来自受信主体增强或等价可信上下文，不能只信任普通客户端参数。
+- `data_permission_other.permission_rule` 是会进入下游 SQL 的条件片段；管理端应按字段白名单生成，服务端与消费方不得接受任意未校验表达式。
+- 当前 `groupRead` / `groupWrite` 来自 meta 默认读写位，不表示“用户已加入权限组”。权限组主要用于挂接 Other 例外规则；配置错误会导致权限过宽或过窄，见 [数据权限策略](../design/data-permission-policy.md)。
+- 策略结果由 `g2rain-spring-boot-starter` 等消费方执行；本服务不保证消费方在策略为 `null` 或远程失败时的 fail-closed 行为。
+
 ## 高风险操作
 
 - `FULL` IdP 同步只有显式开启 `enableDestructiveReconcile` 才允许停用部门或移除关系。

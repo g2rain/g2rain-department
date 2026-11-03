@@ -1,0 +1,108 @@
+name: Publish GHCR image
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish-maven:
+    name: Publish API Maven packages
+    needs: publish-image
+    uses: ./.github/workflows/publish-maven.yml
+    permissions:
+      contents: read
+      packages: write
+
+  publish-image:
+    name: Verify and publish versioned image
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v7.0.1 (Node 24), pinned to its immutable release commit.
+      - name: Check out the tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      # actions/setup-java v6.0.1 (Node 24), pinned to its immutable release commit.
+      - name: Set up Temurin JDK 25
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Validate the release tag and source state
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${GITHUB_REF_TYPE}" == "tag" ]]
+          [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "Only stable vMAJOR.MINOR.PATCH tags may publish images." >&2
+            exit 1
+          }
+
+          git fetch --no-tags origin main
+          TAG_COMMIT="$(git rev-list -n 1 "${GITHUB_REF}")"
+          git merge-base --is-ancestor "${TAG_COMMIT}" origin/main || {
+            echo "Release tag ${GITHUB_REF_NAME} is not reachable from origin/main." >&2
+            exit 1
+          }
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          git show "${TAG_COMMIT}:docs/releases/v${VERSION}.md" | grep -q '[^[:space:]]' || {
+            echo "docs/releases/v${VERSION}.md must exist and be non-empty at the tagged commit." >&2
+            exit 1
+          }
+
+          PROJECT_VERSION="$(mvn --batch-mode --quiet help:evaluate -Dexpression=project.version -DforceStdout)"
+          [[ "${PROJECT_VERSION}" == "${VERSION}" ]] || {
+            echo "Tag version ${VERSION} does not match Maven project.version ${PROJECT_VERSION}." >&2
+            exit 1
+          }
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag_commit=${TAG_COMMIT}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and test all modules
+        run: mvn --batch-mode --no-transfer-progress clean install
+
+      # docker/login-action v4.6.0, pinned to its immutable release commit.
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push both immutable image tags
+        working-directory: g2rain-department-startup
+        env:
+          IMAGE_NAME: ghcr.io/g2rain/g2rain-department
+          IMAGE_TAG: ${{ steps.release.outputs.version }}
+          EXTRA_TAGS: sha-${{ steps.release.outputs.tag_commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=()
+          if [[ -n "$EXTRA_TAGS" ]]; then
+            args+=("-Djib.to.tags=$EXTRA_TAGS")
+          fi
+          mvn --batch-mode --no-transfer-progress -DskipTests=true compile jib:build \
+            "-Djib.to.image=$IMAGE_NAME:$IMAGE_TAG" \
+            "${args[@]}"
+
+      - name: Publish success summary
+        run: |
+          {
+            echo '## GHCR image published'
+            echo
+            echo 'Both required tags were pushed successfully:'
+            echo '- `ghcr.io/g2rain/g2rain-department:${{ steps.release.outputs.version }}`'
+            echo '- `ghcr.io/g2rain/g2rain-department:sha-${{ steps.release.outputs.tag_commit }}`'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -16,10 +16,6 @@
 
 必须先决定 IdP 映射是“删除后释放”还是“永久占位”：前者迁移为 `IF(delete_flag = 0, 0, NULL)` 函数索引，后者唯一键不包含 `delete_flag`。迁移前需评估历史重复数据、执行顺序和回滚。
 
-## DPT-003：运行端口不一致
-
-应用默认端口是 `8085`，Jib 容器声明端口为 `8080`。部署清单、健康检查和 Gateway 路由可能因此失配。应统一端口或明确运行时映射，并同步 POM、配置和部署文档。
-
 ## DPT-004：开发凭证进入版本库
 
 `application-dev.yml` 和 `codegen.properties` 当前包含本地数据库凭证。文档不会复制具体值；接入基线前应改为环境变量、私有本地覆盖或 Secret，并在必要时轮换已暴露凭证。
@@ -27,3 +23,11 @@
 ## DPT-005：验证覆盖不足
 
 `2026-09-03` 执行 `mvn clean verify` 通过，`DepartmentIdpSyncServiceImplTest` 共 9 个测试通过，覆盖部分排序、映射、权限和安全闸逻辑。DAO/Mapper、租户隔离、Controller、缓存事件、真实事务和 Startup 组装尚无可见测试证据。
+
+## DPT-006：权限组语义与命名易误解
+
+当前 `policy_resolve` 将 meta 的 `permission_mode` 直接输出为 `groupRead`/`groupWrite`，**不**以用户是否属于 `data_permission_group` 为门控；权限组主要用于挂接 `data_permission_other`。产品、管理端文案和集成方若按“进组才有部门权限”理解会配置错误。
+
+- 当前文档真相：[数据权限策略](../design/data-permission-policy.md)
+- 待决：维持“默认部门范围 + 组挂例外”，或改为组成员门控部门范围（需改解析 SQL、联调 starter 并同步管理端）
+- 待补：策略聚合 Mapper 测试、与 starter 的契约联调用例
