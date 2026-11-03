@@ -1,0 +1,53 @@
+name: Publish API to GitHub Maven Packages
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: maven-api-publication-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build, verify, and publish API artifacts
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v7.0.1 (Node 24), pinned to its immutable release commit.
+      - name: Check out the selected revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      # actions/setup-java v6.0.1 (Node 24), pinned to its immutable release commit.
+      - name: Set up Temurin JDK 25 and Maven publishing settings
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          server-id: github
+          server-username-env-var: GITHUB_ACTOR
+          server-password-env-var: GITHUB_TOKEN
+
+      - name: Require the selected commit in the release branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor HEAD origin/main || {
+            echo "The selected revision is not contained in origin/main." >&2
+            exit 1
+          }
+
+      - name: Build, verify, and publish parent POM and API artifacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          mvn --batch-mode --no-transfer-progress
+          -pl g2rain-department-api -am clean deploy
+          -DaltDeploymentRepository=github::https://maven.pkg.github.com/g2rain/g2rain-department
