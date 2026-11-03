@@ -184,7 +184,9 @@ flowchart TD
 - 镜像地址：`ghcr.io/g2rain/g2rain-department`
 - 标签：稳定版为 `<version>`（例如 `1.0.0`），提交追溯标签为 `sha-<完整提交 SHA>`；不发布或更新 `latest`。
 - 拉取示例：`docker pull ghcr.io/g2rain/g2rain-department:1.0.0`（包公开后可匿名拉取）。
-- 触发条件：仅当已进入 `main` 的稳定版 `vMAJOR.MINOR.PATCH` tag 被推送时；工作流还会验证 tag 提交上的同版本发布说明、Maven 版本并执行 `mvn clean verify`。
+- 触发条件：仅当已进入 `main` 的稳定版 `vMAJOR.MINOR.PATCH` tag 被推送时；工作流还会验证 tag 提交上的同版本发布说明、Maven 版本并执行 `mvn --batch-mode --no-transfer-progress clean install`。
+
+镜像 job 成功后会调用可复用的 Maven 工作流，发布 `com.g2rain:g2rain-department-api:1.0.0` 及其父 POM 到 `https://maven.pkg.github.com/g2rain/g2rain-department`；不会发布 Biz 或 Startup。Maven 工作流也可手动运行，但所选提交必须属于 `main`。相同稳定版本通常不能覆盖或删除，应按新版本发布。消费方须配置该仓库和认证：跨仓库使用 `GITHUB_TOKEN` 读取时须授予包访问权限；个人凭据应使用具备 `read:packages` 的 PAT classic，并安全写入 Maven settings。Maven Packages 的认证要求不同于公开 GHCR 镜像的匿名拉取。
 
 完整的镜像内容、生产密钥注入、GHCR 权限、首次公开设置及部署边界见[部署说明](docs/operations/deployment.md)和[v1.0.0 发布说明](docs/releases/v1.0.0.md)。本仓库只提供控制面服务，不代表 G2rain 平台的全部能力；平台当前能力与状态以 [g2rain 中央仓库](https://github.com/g2rain/g2rain)为准。
 
